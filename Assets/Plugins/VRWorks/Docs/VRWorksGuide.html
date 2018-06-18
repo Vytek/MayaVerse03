@@ -1,0 +1,245 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VRWorksGuide</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h1 id="nvidia-vrworks-unity-plugin">NVIDIA VRWorks Unity Plugin</h1>
+<h2 id="version-1.0.5">Version 1.0.5</h2>
+<h2 id="setting-up">1 SETTING UP</h2>
+<h3 id="machine-configuration">1.1 MACHINE CONFIGURATION</h3>
+<p>In order to use VRWorks you need:</p>
+<ul>
+<li>Windows PC with Windows 7 (32-bit or 64-bit) or newer</li>
+<li>Quadro Maxwell or GeForce GTX 900 series or newer to use Multi-Resolution Shading (MRS)</li>
+<li>Quadro Pascal or GeForce GTX 1000 series or newer to use Single-Pass-Stereo (SPS) and Lens-Matched-Shading (LMS)</li>
+<li>Multi-GPU setup to use VR SLI</li>
+<li>Latest GeForce driver</li>
+<li>Visual Studio 2015 redistributable <a href="https://www.microsoft.com/en-us/download/details.aspx?id=48145">https://www.microsoft.com/en-us/download/details.aspx?id=48145</a></li>
+<li>Unity 2017.4.1f1 or newer</li>
+</ul>
+<h3 id="unity-project-configuration">1.2 UNITY PROJECT CONFIGURATION</h3>
+<p>To enable VRWorks in your projects you need to:</p>
+<ul>
+<li>Import VRWorks package from the asset store</li>
+<li>In VR projects select “Single Pass” stereo rendering method in Player Settings</li>
+<li>Use DirectX 11 - other APIs are not supported</li>
+<li>Use forward rendering - deferred rendering is not supported.</li>
+</ul>
+<h2 id="integrating-plugin-with-your-game">2 INTEGRATING PLUGIN WITH YOUR GAME</h2>
+<h3 id="adding-vrworks-script-to-your-scene">2.1 ADDING VRWorks SCRIPT TO YOUR SCENE</h3>
+<p>VRWorks plugin comes with two C# scripts VRWorks and VRWorksPresent located in Assets\Plugins\VRWorks\Scripts folder. Both of these scripts need to be attached to the main camera in order for VRWorks to work properly. Please make sure that VRWorksPresent is attached after all image effects since it needs to execute last in order to present correct image on the screen. In addition to C# scripts VRWorks also contains native plugin GfxPluginVRWorks32/64.DLL located in Assets\Plugins\VRWorks\Plugins\x86/_64 folders. For UWP deployment there are special UWP versions of DLLs under Assets\Plugins\VRWorks\Plugins\UWP. Please make sure that DLLs are correctly imported in your project and assigned to correct platform (32 or 64 bit, UWP or standard PC).</p>
+<p>⚠️ If you do not import DLLs correctly for target platform(s) you will get “DLLNotFoundException” error in the console window and VRWorks will not work.</p>
+<p>If VRWorks is integrated correctly in your project you should see the following message in the editor console window once you press play:</p>
+<pre><code>VRWorks: MRS SPS LMS detected
+</code></pre>
+<blockquote>
+<p><strong>NOTE:</strong><br>
+You might see different set of features depending on what sort of GPU configuration is available on your system. The above line is an example of what you should see if you have Pascal or newer GPU with SLI configuration disabled.</p>
+</blockquote>
+<p>If VRWorks is not integrated correctly or your project is running on unsupported hardware you will see the following message:</p>
+<pre><code>VRWorks: Not supported or plugin not initialized properly. If you just started a new project please restart Unity.
+</code></pre>
+<blockquote>
+<p><strong>NOTE:</strong><br>
+There is a possibility that Unity will not always initialize VRWorks plugin correctly first time you load a new project. In this case please restart Unity editor and reload your project and everything should work as expected.</p>
+</blockquote>
+<h3 id="activating-vrworks-features">2.2 ACTIVATING VRWorks FEATURES</h3>
+<p>As we already mentioned scripting language is used to toggle VRWorks features as needed. Valid features include Multi-Resolution Shading (MRS), Single-Pass-Stereo (SPS), Lens-Matched-Shading (LMS) and VR SLI.</p>
+<blockquote>
+<p><strong>NOTE:</strong><br>
+Single-Pass-Stereo (SPS) should not be confused with Unity’s “Single Pass” stereo rendering method. VRWorks SPS is a hardware feature on Pascal or newer GPUs which enables rendering of both left and right eyes at the same time. Without VRWorks SPS Unity’s “Single Pass” stereo render method still has to process each geometry twice on the GPU.</p>
+</blockquote>
+<p>For example, to check if SPS is available and to toggle it on from anywhere within your script code you should simply do the following:</p>
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">using</span> NVIDIA<span class="token punctuation">.</span>VRWorks<span class="token punctuation">;</span>
+
+<span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">IsFeatureAvailable</span><span class="token punctuation">(</span>Feature<span class="token punctuation">.</span>SinglePassStereo<span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+  <span class="token function">SetActiveFeature</span><span class="token punctuation">(</span>Feature<span class="token punctuation">.</span>SinglePassStereo<span class="token punctuation">)</span><span class="token punctuation">;</span>                
+<span class="token punctuation">}</span>
+</code></pre>
+<p>To disable all VRWorks features use:</p>
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">using</span> NVIDIA<span class="token punctuation">.</span>VRWorks<span class="token punctuation">;</span>
+
+<span class="token function">SetActiveFeature</span><span class="token punctuation">(</span>Feature<span class="token punctuation">.</span>None<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>Here are the valid feature configurations based on your project type:</p>
+<ul>
+<li>Desktop (non-VR) projects
+<ul>
+<li>MRS</li>
+</ul>
+</li>
+<li>VR projects
+<ul>
+<li>MRS, SPS, SPS + LMS in a single GPU mode (Pascal+ required for SPS/LMS)</li>
+<li>MRS in 2-way SLI mode</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p><strong>NOTE:</strong></p>
+<ul>
+<li>SPS + MRS is a valid combination but it is not implemented in this version</li>
+<li>In current implementation LMS mode requires SPS which is automatically enabled when LMS mode is set.</li>
+<li>VR SLI is automatically enabled in VR projects if SLI configuration is available and enabled in GeForce driver control panel. However, it is possible to override this behavior by passing command line option “-no-vrworks-sli”. It is important to mention that this version only supports 2-way SLI.</li>
+</ul>
+</blockquote>
+<h3 id="configuring-multi-resolution-parameters">2.3 CONFIGURING MULTI-RESOLUTION PARAMETERS</h3>
+<p>In MRS mode there are 9 viewports (3x3 grid) and it is possible to change viewport areas and pixel density. This can be achieved by changing viewport splits in X and Y direction and pixel density parameters in the VRWorks component. Viewport splits are values in range [0,0.5] and represent a percentage of the entire viewport area used to split the screen in horizontal and vertical direction (mirrored left/right and top/bottom). Pixel density is a value in range [0.05,0.95] used to control rendering quality in the viewports on the outskirts. Please note that viewport in the middle always remains at 100% pixel density. Default value for horizontal and vertical split is 0.25 while default value for pixel density is 0.7.</p>
+<h3 id="setting-up-image-effects">2.4 SETTING UP IMAGE EFFECTS</h3>
+<p>In order to work correctly with MRS/LMS some image effects need to be modified. This is required because MRS/LMS use less pixels in color and depth render targets so adjustments are required to process pixels correctly.</p>
+<p>⚠️ Support for image effects is limited since certain image effects might cause visual artifacts when MRS/LMS is used. If your project needs certain image effect which does not work correctly with MRS/LMS please let us know and we will do our best to help.</p>
+<p>Here is the list of things to take under consideration when working with image effects:</p>
+<ul>
+<li>VRWorks.cginc should be included in image effects to access VRWorks related shader API. Please have a look at the code and comments for more details.</li>
+<li>In VR projects UV coordinates which are produced by vertex shaders in image effects need to be transformed correctly. Here is one example:</li>
+</ul>
+<pre class=" language-hlsl"><code class="prism  language-hlsl">float4 _MainTex_ST; // scale offset parameter
+v2f vert(appdata_img v)
+{
+  ….  
+  // TRANSFORM_TEX ensures that UV coordinate is adjusted for double-wide render target
+  o.uv = TRANSFORM_TEX(v.texcoord.xy, _MainTex);  
+  return o;
+}
+</code></pre>
+<ul>
+<li>VRWorks is using special keywords to control shader execution. These keywords should be set on each image effect material like this:</li>
+</ul>
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">void</span> <span class="token function">OnRenderImage</span> <span class="token punctuation">(</span>RenderTexture source<span class="token punctuation">,</span> RenderTexture destination<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+   <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+   NVIDIA<span class="token punctuation">.</span>VRWorks<span class="token punctuation">.</span><span class="token function">SetKeywords</span><span class="token punctuation">(</span>myFXMaterial<span class="token punctuation">)</span>
+   <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<ul>
+<li>#pragma multi_compile VRWORKS_MRS VRWORKS_LMS VRWORKS_NONE should be added to image effect shaders</li>
+<li>If SAMPLE_DEPTH_TEXTURE macro is used no modification is needed, otherwise depth samplers should be replaced as follows:
+<ul>
+<li>_CameraDepthTexture should be replaced with VRWorksGetDepthSampler()</li>
+<li>_CameraDepthNormalsTexture should be replaced with VRWorksGetDepthNormalsSampler()</li>
+<li>UV coordinate which is used to sample depth buffer needs to be remapped. Here is an example:</li>
+</ul>
+<pre class=" language-hlsl"><code class="prism  language-hlsl">// Standard code
+float depth = tex2D(_CameraDepthTexture, uv).r;
+// VRWorks modification
+float depth = tex2D(VRWorksGetDepthSampler(), VRWorksRemapUV(uv)).r;
+</code></pre>
+</li>
+<li>In some cases it might be necessary to bypass VRWorksRemapUV and explicitly transform UV coordinates from linear to non-linear (MRS/LMS) space and back. For those purposes you can use <strong>VRWorksUVToLinear</strong> and <strong>VRWorksUVFromLinear</strong> APIs. For example,  transformation similar to VRWorksUVFromLinear is used internaly to present final image on screen (effectively converts MRS/LMS image into a full resolution).</li>
+</ul>
+<blockquote>
+<p><strong>NOTE:</strong><br>
+If the final image is flipped upside down when MRS/LMS is used please toggle the “VerticalFlip” checkbox in VRWorksPresent component.</p>
+</blockquote>
+<p>For more details please have a look at the VRWorks compatible image effects in the example projects.</p>
+<h2 id="examples">3 EXAMPLES</h2>
+<p>There are two complete projects available on the asset store. First project is modified version of Unity’s “Viking Village” demo which includes implementation of desktop MRS together with modified versions of image effects like ScreenSpaceAmbientOcclusion and Obscurance,GlobalFog and DOF. The other project is modified version of Unity’s “VR Samples” demo which demonstrates MRS/SPS and LMS in VR mode. Here are the links:</p>
+<ul>
+<li>“Viking Village” <a href="https://www.assetstore.unity3d.com/en/#!/content/88651">https://www.assetstore.unity3d.com/en/#!/content/88651</a></li>
+<li>“VR Samples” <a href="https://www.assetstore.unity3d.com/en/#!/content/88648">https://www.assetstore.unity3d.com/en/#!/content/88648</a></li>
+</ul>
+<h2 id="performance-and-visual-quality">4 PERFORMANCE AND VISUAL QUALITY</h2>
+<p>VRWorks features can provide boost in performance <strong>in certain scenarios where botleneck is on the GPU side</strong>. SPS can improve performance in geometry bound scenes while MRS/LMS can help in pixel bound scenarios. VR SLI can help in both scenarios since work is performed by two GPUs. In addition to potential performance benefits, MRS/LMS features can help improve visual quality by allowing you to render your scene at higher resolution or by adding more advanced post processing effects (e.g. 4K rendering in desktop non-VR projects).</p>
+<p>When it comes to anti-aliasing instead of using MSAA please consider using high quality FXAA combined with MRS or LMS.</p>
+<p>⚠️ If your project is CPU bound you should not expect to see any performance benefits by integrating and enabling VRWorks features. Same applies if your project is too simple for the GPU you are targeting. In geometry heavy scenes (e.g. tens of millions of vertices) there is a chance that MRS/LMS can hurt performance so they should be used only in pixel bound scenarios.</p>
+<h2 id="support">5 SUPPORT</h2>
+<p>For any VRWorks related questions please email <a href="mailto:UnitySupport@nvidia.com">UnitySupport@nvidia.com</a>.</p>
+<blockquote>
+<p><strong>IMPORTANT:</strong><br>
+Any issues should also be reported directly to Unity because VRWorks functionality depends on specific modifications in the core engine which are maintained by Unity.</p>
+</blockquote>
+<h2 id="command-line-options">6 COMMAND LINE OPTIONS</h2>
+<ul>
+<li>-no-vrworks-sli (disable VR SLI)</li>
+<li>-no-vrworks-log (disable logging)</li>
+</ul>
+<h2 id="appendix-a">APPENDIX A</h2>
+<h3 id="custom-shaders-and-sps-vr-projects">Custom shaders and SPS (VR projects)</h3>
+<p>When custom shaders are used (like in case of Valve’s “The Lab Renderer”) it is quite easy to enable support for SPS. Since SPS renders both eyes in a single pass each vertex or domain shader needs to be modified so it outputs homogenous coordinates for the right eye. Here is, for example, how to modify vr_standard.shader from “The Lab Renderer”:</p>
+<pre class=" language-hlsl"><code class="prism  language-hlsl">...
+// define our matrix for the right eye
+#ifndef PLUGIN_STEREOX_VARS_DECLARED
+  CBUFFER_START(UnityPerDrawVRWorks)
+    float4x4 _WorldToClipXRight;
+  CBUFFER_END
+#endif
+
+struct PS_INPUT
+{
+…
+// right eye position at the end of the VS output (PS input) structure
+#ifdef PLUGIN_STEREOX
+  float4 pos_right : NV_X_RIGHT;
+#endif                    
+};
+
+// MainVs --------------------------------------------------------------------------
+PS_INPUT MainVs( VS_INPUT i )
+{
+…
+ // in VS we need to provide homogenous coordinates for the right eye
+ #ifdef PLUGIN_STEREOX
+ o.pos_right = mul(_WorldToClipXRight, mul(unity_ObjectToWorld, i.vPositionOs.xyzw));
+ #endif
+…
+}
+...
+</code></pre>
+<blockquote>
+<p><strong>NOTE:</strong><br>
+View projection matrix _WorldToClipXRight is set in OnPreRender method inside VRWorks.cs script which as we mentioned earlier needs to be attached to the main camera in your scene.</p>
+</blockquote>
+<h2 id="appendix-b">APPENDIX B</h2>
+<h3 id="notice">Notice</h3>
+<p>The information provided in this specification is believed to be accurate and reliable as of the date provided. However, NVIDIA Corporation (“NVIDIA”) does not give any representations or warranties, expressed or implied, as to the accuracy or completeness of such information. NVIDIA shall have no liability for the consequences or use of such information or for any infringement of patents or other rights of third parties that may result from its use. This publication supersedes and replaces all other specifications for the product that may have been previously supplied.<br>
+NVIDIA reserves the right to make corrections, modifications, enhancements, improvements, and other changes to this specification, at any time and/or to discontinue any product or service without notice. Customer should obtain the latest relevant specification before placing orders and should verify that such information is current and complete.<br>
+NVIDIA products are sold subject to the NVIDIA standard terms and conditions of sale supplied at the time of order acknowledgement, unless otherwise agreed in an individual sales agreement signed by authorized representatives of NVIDIA and customer. NVIDIA hereby expressly objects to applying any customer general terms and conditions with regard to the purchase of the NVIDIA product referenced in this specification.<br>
+NVIDIA products are not designed, authorized or warranted to be suitable for use in medical, military, aircraft, space or life support equipment, nor in applications where failure or malfunction of the NVIDIA product can reasonably be expected to result in personal injury, death or property or environmental damage. NVIDIA accepts no liability for inclusion and/or use of NVIDIA products in such equipment or applications and therefore such inclusion and/or use is at customer’s own risk.<br>
+NVIDIA makes no representation or warranty that products based on these specifications will be suitable for any specified use without further testing or modification. Testing of all parameters of each product is not necessarily performed by NVIDIA. It is customer’s sole responsibility to ensure the product is suitable and fit for the application planned by customer and to do the necessary testing for the application in order to avoid a default of the application or the product. Weaknesses in customer’s product designs may affect the quality and reliability of the NVIDIA product and may result in additional or different conditions and/or requirements beyond those contained in this specification. NVIDIA does not accept any liability related to any default, damage, costs or problem which may be based on or attributable to: (i) the use of the NVIDIA product in any manner that is contrary to this specification, or (ii) customer product designs.<br>
+No license, either expressed or implied, is granted under any NVIDIA patent right, copyright, or other NVIDIA intellectual property right under this specification. Information published by NVIDIA regarding third-party products or services does not constitute a license from NVIDIA to use such products or services or a warranty or endorsement thereof. Use of such information may require a license from a third party under the patents or other intellectual property rights of the third party, or a license from NVIDIA under the patents or other intellectual property rights of NVIDIA. Reproduction of information in this specification is permissible only if reproduction is approved by NVIDIA in writing, is reproduced without alteration, and is accompanied by all associated conditions, limitations, and notices.<br>
+ALL NVIDIA DESIGN SPECIFICATIONS, REFERENCE BOARDS, FILES, DRAWINGS, DIAGNOSTICS, LISTS, AND OTHER DOCUMENTS (TOGETHER AND SEPARATELY, “MATERIALS”) ARE BEING PROVIDED “AS IS.” NVIDIA MAKES NO WARRANTIES, EXPRESSED, IMPLIED, STATUTORY, OR OTHERWISE WITH RESPECT TO THE MATERIALS, AND EXPRESSLY DISCLAIMS ALL IMPLIED WARRANTIES OF NONINFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A PARTICULAR PURPOSE. Notwithstanding any damages that customer might incur for any reason whatsoever, NVIDIA’s aggregate and cumulative liability towards customer for the products described herein shall be limited in accordance with the NVIDIA terms and conditions of sale for the product.</p>
+<p>Trademarks<br>
+NVIDIA and the NVIDIA logo are trademarks and/or registered trademarks of NVIDIA Corporation in the U.S. and other countries. Other company and product names may be trademarks of the respective companies with which they are associated.</p>
+<p>Copyright<br>
+© 2017 NVIDIA Corporation. All rights reserved.</p>
+<p><a href="http://www.nvidia.com">www.nvidia.com</a></p>
+<h2 id="appendix-c">APPENDIX C</h2>
+<h3 id="rd-party-software">3rd PARTY SOFTWARE</h3>
+<h4 id="xxhash">XXHASH</h4>
+<p>xxHash - Extremely Fast Hash algorithm<br>
+Copyright © 2012-2016, Yann Collet.</p>
+<p>BSD 2-Clause License (<a href="http://www.opensource.org/licenses/bsd-license.php">http://www.opensource.org/licenses/bsd-license.php</a>)</p>
+<p>Redistribution and use in source and binary forms, with or without<br>
+modification, are permitted provided that the following conditions are<br>
+met:</p>
+<ul>
+<li>Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.</li>
+<li>Redistributions in binary form must reproduce the above<br>
+copyright notice, this list of conditions and the following disclaimer<br>
+in the documentation and/or other materials provided with the<br>
+distribution.</li>
+</ul>
+<p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS<br>
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT<br>
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR<br>
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT<br>
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,<br>
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT<br>
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,<br>
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY<br>
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT<br>
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE<br>
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</p>
+<p>You can contact the author at :  - xxHash source repository : <a href="https://github.com/Cyan4973/xxHash">https://github.com/Cyan4973/xxHash</a></p>
+</div>
+</body>
+
+</html>
