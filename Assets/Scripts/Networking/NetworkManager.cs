@@ -139,7 +139,7 @@ public class NetworkManager : MonoBehaviour {
         INIParser ini = new INIParser();
         // Open the save file. If the save file does not exist, INIParser automatically create
         // one
-        ini.Open(Application.dataPath + "/MayaVerseLowPoly.ini");
+        ini.Open(Application.dataPath + "/MayaVerse.ini");
         if (ini.IsKeyExists("NetworkConfig", "ServerIP"))
         {
             ipAddress = ini.ReadValue("NetworkConfig", "ServerIP", "127.0.0.1");
