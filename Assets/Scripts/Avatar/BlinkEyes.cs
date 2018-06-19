@@ -38,7 +38,7 @@ public class BlinkEyes : MonoBehaviour {
         {
             if (eyesClosed == true && blink <= 100.0f)
             {
-                Debug.Log("Close");
+                //Debug.Log("Close");
                 blink += EyeOpenSpeed; //...increase weight
                 skinnedMeshRenderer.SetBlendShapeWeight(EyesBlink_R_BlendShape, blink);
                 skinnedMeshRenderer.SetBlendShapeWeight(EyesBlink_L_BlendShape, blink);
@@ -49,7 +49,7 @@ public class BlinkEyes : MonoBehaviour {
                 skinnedMeshRenderer.SetBlendShapeWeight(EyesBlink_R_BlendShape, blink);
                 skinnedMeshRenderer.SetBlendShapeWeight(EyesBlink_L_BlendShape, blink);
                 //eyesClosed = false;
-                Debug.Log("Open");
+                //Debug.Log("Open");
             }
             if (blink >= 100)
             {
