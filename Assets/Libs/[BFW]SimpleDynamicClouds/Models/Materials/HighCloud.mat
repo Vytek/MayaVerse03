@@ -92,7 +92,7 @@ Material:
     - _Brightness: 1
     - _BumpScale: 1
     - _Cutoff: 0.5
-    - _Density: 1.8
+    - _Density: 1.16
     - _DetailNormalMapScale: 1
     - _DstBlend: 10
     - _Emptiness: 0.096
