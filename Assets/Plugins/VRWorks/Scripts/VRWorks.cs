@@ -25,14 +25,10 @@ namespace NVIDIA
   }
 #endif
 
-#if (UNITY_UWP)
-#warning UWP active
-#endif
-
-    [RequireComponent(typeof(Camera))]
+  [RequireComponent(typeof(Camera))]
   public class VRWorks : MonoBehaviour
   {
-    // PUBLIC API
+    // PUBLIC API    
 
     [Header("Multi-Resolution Shading")]
     [Range(0.0f, 0.4f)]
@@ -72,7 +68,7 @@ namespace NVIDIA
       uint renderFeatures = UnityGetRenderFeatureState();
       if ((renderFeatures & kPluginExtFeatureMRSAvailable) != 0)
       {
-        // Maxwell
+        // Maxwell+
         features += "MRS ";
       }
       if ((renderFeatures & kPluginExtFeatureSLIActive) != 0)
@@ -82,11 +78,11 @@ namespace NVIDIA
       }
       else  if ((renderFeatures & kPluginExtFeatureSPSAvailable) != 0)
       {
-        // Pascal or newer GPU in non SLI configuration
+        // Pascal+ in non SLI configuration
         features += "SPS LMS";
       }      
 
-      print("VRWorks: " + (features.Length > 0 ? features + " detected" : "Not supported or GfxPluginVRWorks DLL was not loaded properly."));
+      print("VRWorks: " + (features.Length > 0 ? features + " detected" : "Not supported or plugin was not initialized properly. If you just started a new project please restart Unity."));
       m_TargetSize = 0;
       m_RenderFeatures = 0;
       m_MRSParameters = new MRSParameters();      
@@ -214,6 +210,8 @@ namespace NVIDIA
             Debug.LogErrorFormat("VRWorks feature " + GetFeatureName(value) + " is not supported on this hardware");
             return false;
         }
+        // These are _all_ currently implemented and valid feature combinations.
+        // Trying to modify these flags will result in unpredictable behavior.
         uint renderFeatures = 0;
         if (value == Feature.MultiResolution)
         {            
@@ -226,7 +224,7 @@ namespace NVIDIA
         else if (value == Feature.LensMatchedShading)
         {
             renderFeatures |= kPluginExtFeatureSPSActive | kPluginExtFeatureLMSActive;
-        }
+        }        
         UnitySetRenderFeatureState(renderFeatures);
 
         UnityEngine.Rendering.CommandBuffer buf = new UnityEngine.Rendering.CommandBuffer();
@@ -326,7 +324,6 @@ namespace NVIDIA
         m_TmpUVRemapToLinearRT.Create();
 
         // Update command buffers        
-
         for (int i = 0; i < (int)CB.kCB_Count; i++)
         {
           m_CommandBuffer[i].Clear();
@@ -496,128 +493,64 @@ namespace NVIDIA
     private RenderTexture m_TmpUVRemapToLinearRT;
     private RenderTexture m_TmpUVRemapFromLinearRT;
 
-#if (UNITY_UWP)
 #if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks_UWP64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #else
-        [DllImport("GfxPluginVRWorks_UWP32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #endif
-#else
-#if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#else
-        [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#endif
-#endif
-        private static extern void UnityGetFeatureData(ref FeatureData data);
+    private static extern void UnityGetFeatureData(ref FeatureData data);
 
-#if (UNITY_UWP)
 #if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks_UWP64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #else
-        [DllImport("GfxPluginVRWorks_UWP32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #endif
-#else
-#if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#else
-        [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#endif
-#endif
-        private static extern void UnitySetMRSParameters(ref MRSParameters mrsParams);
+    private static extern void UnitySetMRSParameters(ref MRSParameters mrsParams);
 
-#if (UNITY_UWP)
 #if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks_UWP64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #else
-        [DllImport("GfxPluginVRWorks_UWP32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #endif
-#else
-#if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#else
-        [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#endif
-#endif
-        private static extern UInt32 UnityRenderingExtGetEventIDOffset();
+    private static extern UInt32 UnityRenderingExtGetEventIDOffset();
 
 
-#if (UNITY_UWP)
 #if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks_UWP64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #else
-        [DllImport("GfxPluginVRWorks_UWP32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #endif
-#else
-#if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#else
-        [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#endif
-#endif
-        private static extern IntPtr PluginExtGetIssueMarkerCallback();
+    private static extern IntPtr PluginExtGetIssueMarkerCallback();
 
 
-#if (UNITY_UWP)
 #if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks_UWP64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #else
-        [DllImport("GfxPluginVRWorks_UWP32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #endif
-#else
-#if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#else
-        [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#endif
-#endif
-        private static extern IntPtr PluginExtGetIssueEventCallback();
+    private static extern IntPtr PluginExtGetIssueEventCallback();
 
 
-#if (UNITY_UWP)
 #if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks_UWP64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #else
-        [DllImport("GfxPluginVRWorks_UWP32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #endif
-#else
-#if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#else
-        [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#endif
-#endif
-        private static extern void UnitySetRenderFeatureState(uint features);
+    private static extern void UnitySetRenderFeatureState(uint features);
 
-#if (UNITY_UWP)
 #if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks_UWP64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #else
-        [DllImport("GfxPluginVRWorks_UWP32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+  [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #endif
-#else
-#if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#else
-        [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#endif
-#endif
-        private static extern uint UnityGetRenderFeatureState();
+    private static extern uint UnityGetRenderFeatureState();
 
-#if (UNITY_UWP)
 #if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks_UWP64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+    [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #else
-        [DllImport("GfxPluginVRWorks_UWP32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+  [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
 #endif
-#else
-#if (UNITY_64 || UNITY_EDITOR_64 || PLATFORM_ARCH_64)
-      [DllImport("GfxPluginVRWorks64", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#else
-        [DllImport("GfxPluginVRWorks32", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-#endif
-#endif
-        private static extern void UnitySetInternalFlags(uint flags);
+    private static extern void UnitySetInternalFlags(uint flags);
 
     static uint kPluginExtFeatureNone = 0;
     static uint kPluginExtFeatureMRSAvailable = 1 << 0;
@@ -718,19 +651,18 @@ namespace NVIDIA
       float diff = Math.Abs(a - b);
 
       if (a == b)
-      { // shortcut, handles infinities
+      { 
         return true;
       }
       else if (a == 0 || b == 0 || diff < Single.Epsilon)
       {
-        // a or b is zero or both are extremely close to it
-        // relative error is less meaningful here
         return diff < (epsilon * Single.Epsilon);
       }
-      else { // use relative error
+      else
+      { 
         return diff / (absA + absB) < epsilon;
       }
-    }
+    }    
 
     private static FeatureData m_FeatureData;
     private MRSParameters m_MRSParameters;

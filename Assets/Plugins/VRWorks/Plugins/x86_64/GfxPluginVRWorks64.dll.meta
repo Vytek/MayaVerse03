@@ -24,12 +24,11 @@ PluginImporter:
           Exclude OSXUniversal: 0
           Exclude Win: 1
           Exclude Win64: 0
-          Exclude WindowsStoreApps: 1
     data:
       first:
         Any: 
       second:
-        enabled: 0
+        enabled: 1
         settings: {}
     data:
       first:
@@ -39,7 +38,7 @@ PluginImporter:
         settings:
           CPU: x86_64
           DefaultValueInitialized: true
-          OS: Windows
+          OS: AnyOS
     data:
       first:
         Facebook: Win
@@ -95,7 +94,7 @@ PluginImporter:
       second:
         enabled: 1
         settings:
-          CPU: x86_64
+          CPU: AnyCPU
     data:
       first:
         Standalone: Win
@@ -110,17 +109,6 @@ PluginImporter:
         enabled: 1
         settings:
           CPU: AnyCPU
-    data:
-      first:
-        Windows Store Apps: WindowsStoreApps
-      second:
-        enabled: 0
-        settings:
-          CPU: X86
-          DontProcess: True
-          PlaceholderPath: 
-          SDK: AnySDK
-          ScriptingBackend: AnyScriptingBackend
   userData: 
   assetBundleName: 
   assetBundleVariant: 

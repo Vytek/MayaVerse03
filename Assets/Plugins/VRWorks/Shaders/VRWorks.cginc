@@ -1,6 +1,3 @@
-// Upgrade NOTE: replaced 'defined VRWORKS_MRS' with 'defined (VRWORKS_MRS)'
-// Upgrade NOTE: replaced 'defined VRWORKS_NONE' with 'defined (VRWORKS_NONE)'
-
 #ifndef _VRWORKS_CGINC
 #define _VRWORKS_CGINC
 
@@ -24,9 +21,20 @@ sampler2D VRWorksGetDepthNormalsSampler()
   return _CameraDepthNormalsTexture;
 }
 float2 VRWorksRemapUV(float2 uv)
-{
+{  
   float2 ruv = tex2D(_PluginUVRemapToLinearTexture, uv).xy;
-  return TRANSFORM_TEX(ruv, _CameraDepthTexture); // needed in VR projects with double-wide render target
+  // NOTE: In VR projects using double wide render target (Unity's single pass stereo) there are two scenarios:
+  // 1) Image effect executes two draw calls - one per eye
+  // 2) Image effect executes a single draw call to handle both eyes
+  //
+  // In first scenario we can use TRANSFORM_TEX macro like this
+  // return TRANSFORM_TEX(ruv, _CameraDepthTexture); 
+  // 
+  // In second scenario we need to manually adjust UV coordinates like this
+  ruv.x *= 0.5;
+  if (uv.x >= 0.5)
+      ruv.x += 0.5;
+  return ruv;
 }
 float2 VRWorksClampUV(float2 uv)
 {
