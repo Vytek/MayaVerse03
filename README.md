@@ -24,8 +24,10 @@ A micro manifesto for the perfect "Metaverse":
 
 * Decentralized architectures: Almost all platforms for virtual worlds are based on classic client-server architecture. Moving to a peer-to-peer system would have enormous advantages. JanusVR, for example, allows you to use the incredible ipfs (Inter-Planetary File System) for the fast recovery of different assets.
 
-Implementation of the Alfa version
+Implementation of the Alfa version.
+
 The software is currently only developed for Windows platform.
+
 The current Client system is based on SW:
 
 3D Graphics Engine: Unity3D 2017.3.1f01
