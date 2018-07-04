@@ -1,4 +1,4 @@
-# MayaVerse Updated Alfa 03
+# MayaVerse Updated Alfa Versione 0.3
 
 MayaVerse is an experimental Metaverse - Immersive Virtual World
 
