@@ -39,6 +39,37 @@ The tests were carried out on the following HW VR:
 
  - HTC Vive 1.2 
  - Oculus Rift CV1
+ 
+## Licenses
 
+ - **Only the code in `Assets/Scripts` is released under the MIT license**
+ - Other code libraries in `Assets/Libraries` all come with their own licenses
+ - Any binary resources are more or less there on a "fair use" basis, **don't assume that you can just copy and use them**
+
+## Useful links:
+Configuration git:
+[Link to file .gitignore](https://gist.github.com/Shogan/dad6786c58c5ad88e0ec)
+
+## Open source Assets List ##
+
+- https://github.com/thestonefox/VRTK (Commit: d88c9eafc31975bb9566e5747c12e48e5f75fa3d)
+- https://github.com/ValveSoftware/steamvr_unity_plugin
+- https://github.com/KhronosGroup/UnityGLTF
+- https://github.com/AKuellar/LSky-v2
+- https://github.com/BananaHemic/Mumble-Unity
+
+### Networking ###
+
+- https://github.com/DarkRiftNetworking/Hazel-Networking
+- https://github.com/Vytek/HazelTestUDPClientUnity
+- https://github.com/Vytek/HazelTest
+- https://google.github.io/flatbuffers/
+- https://github.com/Vytek/MVUpdateDB
+
+## Free Assets ##
+
+- https://assetstore.unity.com/packages/tools/particles-effects/bfw-simple-dynamic-clouds-85665
+- https://assetstore.unity.com/packages/tools/particles-effects/nvidia-vrworks-83505
+- https://avatarsdk.com/
 
 [![ko-fi](https://www.ko-fi.com/img/donate_sm.png)](https://ko-fi.com/V7V4EXM8)
