@@ -64,6 +64,7 @@ Configuration git:
 - https://github.com/Vytek/HazelTestUDPClientUnity
 - https://github.com/Vytek/HazelTest
 - https://google.github.io/flatbuffers/
+- https://github.com/PimDeWitte/UnityMainThreadDispatcher
 - https://github.com/Vytek/MVUpdateDB
 
 ## Free Assets ##
