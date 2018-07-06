@@ -74,6 +74,7 @@ Configuration git:
 - https://avatarsdk.com/
 
 --
+
 See project wiki for info: https://github.com/Vytek/MayaVerse03/wiki
 
 [![ko-fi](https://www.ko-fi.com/img/donate_sm.png)](https://ko-fi.com/V7V4EXM8)
