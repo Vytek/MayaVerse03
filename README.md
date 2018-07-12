@@ -58,6 +58,10 @@ Configuration git:
 - https://github.com/AKuellar/LSky-v2
 - https://github.com/BananaHemic/Mumble-Unity
 
+### Tools ###
+
+- https://github.com/gportelli/UnityScreenLogger
+
 ### Networking ###
 
 - https://github.com/DarkRiftNetworking/Hazel-Networking
