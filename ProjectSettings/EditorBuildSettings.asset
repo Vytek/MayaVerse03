@@ -6,5 +6,5 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Utils/Tayx/Graphy - Ultimate Stats Monitor/Scene/Customize Graphy.unity
-    guid: 0c578a8ac126810458be2979ceb891a4
+    path: Assets/Scenes/MainScene.unity
+    guid: 33e184a57dea5499e8b9ef4b2c176c55
