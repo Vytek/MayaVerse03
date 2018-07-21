@@ -1,5 +1,5 @@
 // define Z_TEXTURE_CHANNELS 4
-// define Z_MESH_ATTRIBUTES UV3
+// define Z_MESH_ATTRIBUTES 
 // Important!  This is a generated file, any changes will be overwritten
 // when the _SfSrc suffixed version of this shader is modified.
 
