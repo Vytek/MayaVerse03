@@ -57,10 +57,12 @@ Configuration git:
 - https://github.com/KhronosGroup/UnityGLTF
 - https://github.com/AKuellar/LSky-v2
 - https://github.com/BananaHemic/Mumble-Unity
+- https://github.com/sampaiodias/unity-cli
 
 ### Tools ###
 
 - https://github.com/gportelli/UnityScreenLogger
+- https://github.com/Tayx94/graphy
 
 ### Networking ###
 
