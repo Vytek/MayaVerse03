@@ -1,8 +1,5 @@
-// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
-// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
 // define Z_TEXTURE_CHANNELS 2
-// define Z_MESH_ATTRIBUTES Color
+// define Z_MESH_ATTRIBUTES 
 // Important!  This is a generated file, any changes will be overwritten
 // when the _SfSrc suffixed version of this shader is modified.
 
