@@ -20,6 +20,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4563704553687596}
   - component: {fileID: 114294516215506922}
+  - component: {fileID: 114541732149874910}
   m_Layer: 0
   m_Name: ModuleRezObject
   m_TagString: Untagged
@@ -52,3 +53,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moduleInternalCode: RezObject
+--- !u!114 &114541732149874910
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1060062000036454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4f8b619f415c1ad41a14438c90a40ad8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
