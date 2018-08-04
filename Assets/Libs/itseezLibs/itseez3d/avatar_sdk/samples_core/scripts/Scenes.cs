@@ -17,7 +17,6 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 	public enum SceneType
 	{
 		AVATAR_VIEWER,
-		SANDBOX_SAMPLE
 	}
 
 	public static class Scenes
@@ -25,7 +24,6 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 		private static Dictionary<SceneType, string> sceneNames = new Dictionary<SceneType, string>()
 		{
 			{ SceneType.AVATAR_VIEWER, "itseez3d/avatar_sdk/samples_core/scenes/avatar_viewer" },
-			{ SceneType.SANDBOX_SAMPLE, "itseez3d/avatar_sdk/samples_cloud/03_sandbox_sample_cloud/scenes/03_sandbox_sample_cloud" }
 		};
 
 		public static string GetSceneName(SceneType scene)

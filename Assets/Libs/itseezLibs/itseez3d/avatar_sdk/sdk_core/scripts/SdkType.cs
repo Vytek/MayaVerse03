@@ -17,6 +17,6 @@ namespace ItSeez3D.AvatarSdk.Core
 	public enum SdkType
 	{
 		Cloud,
-		Offline
+		Offline,
 	}
 }

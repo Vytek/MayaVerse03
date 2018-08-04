@@ -19,6 +19,5 @@ namespace ItSeez3D.AvatarSdk.Core
 		/// The root URL for Avatar SDK server.
 		/// </summary>
 		public const string rootUrl = "https://api.avatarsdk.com";
-		//public const string rootUrl = "http://192.168.0.121:8002";
 	}
 }

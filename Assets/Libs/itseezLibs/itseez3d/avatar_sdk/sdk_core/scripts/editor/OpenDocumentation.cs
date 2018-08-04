@@ -10,15 +10,12 @@
 
 #if UNITY_EDITOR && !UNITY_WEBGL
 
-using ItSeez3D.AvatarSdk.Core.Editor;
 using UnityEditor;
-using UnityEngine;
-using ItSeez3D.AvatarSdk.Core;
 
 namespace ItSeez3D.AvatarSdk.Core.Editor
 {
 	/// <summary>
-	/// Open documentation.
+	/// Open documentation main page through menu.
 	/// </summary>
 	[InitializeOnLoad]
 	public static class OpenDocumentation
@@ -26,10 +23,8 @@ namespace ItSeez3D.AvatarSdk.Core.Editor
 		[MenuItem ("Window/itSeez3D Avatar SDK/Documentation")]
 		public static void OpenDocumentationHtml ()
 		{
-			string url = string.Format("https://d2nrrm3rfzncjo.cloudfront.net/documentation/{0}/index.html", CoreTools.SdkVersion);
-			Application.OpenURL(url);
+			DocumentationHelper.OpenDocumentationInBrowser("index.html");
 		}
 	}
 }
-
 #endif

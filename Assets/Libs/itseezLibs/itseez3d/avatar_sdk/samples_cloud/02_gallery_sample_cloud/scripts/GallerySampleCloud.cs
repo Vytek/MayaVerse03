@@ -41,7 +41,6 @@ namespace ItSeez3D.AvatarSdkSamples.Cloud
 		public GallerySampleCloud()
 		{
 			sdkType = SdkType.Cloud;
-			viewerImplementation = new CloudViewerImplementation();
 		}
 
 		#region overrided base methods

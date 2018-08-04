@@ -8,6 +8,7 @@
 * Written by Itseez3D, Inc. <support@itseez3D.com>, April 2017
 */
 
+using ItSeez3D.AvatarSdk.Core;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -44,9 +45,10 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 			detailsLevelControls.SetActive(true);
 		}
 
-		protected override IEnumerator GenerateAndDisplayHead(byte[] photoBytes)
+		protected override IEnumerator GenerateAndDisplayHead(byte[] photoBytes, PipelineType pipeline)
 		{
-			var initializeRequest = avatarProvider.InitializeAvatarAsync(photoBytes);
+			// We don't need blendshapes nor haircuts. So create an empty avatar resources set
+			var initializeRequest = avatarProvider.InitializeAvatarAsync(photoBytes, "name", "description", pipeline, AvatarResources.Empty);
 			yield return Await(initializeRequest);
 			currentAvatarCode = initializeRequest.Result;
 
@@ -64,13 +66,13 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 
 		private IEnumerator ChangeMeshDetailsLevel(int newDetailsLevel)
 		{
-			if (newDetailsLevel < 0 || newDetailsLevel > 3)
+			if (newDetailsLevel < 0 || newDetailsLevel > 4)
 				yield break;
 
 			currentDetailsLevel = newDetailsLevel;
-			SetButtonsInteractable(false);
+			SetControlsInteractable(false);
 			yield return ChangeMeshResolution(currentAvatarCode, currentDetailsLevel);
-			SetButtonsInteractable(true);
+			SetControlsInteractable(true);
 		}
 
 		private IEnumerator ChangeMeshResolution(string avatarCode, int detailsLevel)
@@ -82,9 +84,9 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 			var avatarHeadRequest = avatarProvider.GetHeadMeshAsync(avatarCode, false, detailsLevel);
 			yield return Await(avatarHeadRequest);
 
-			MeshFilter meshFilter = headObject.GetComponentInChildren<MeshFilter>();
-			meshFilter.mesh = avatarHeadRequest.Result.mesh;
-			detailsLevelText.text = string.Format("Triangles count:\n{0}", meshFilter.mesh.triangles.Length / 3);
+			SkinnedMeshRenderer meshRenderer = headObject.GetComponentInChildren<SkinnedMeshRenderer>();
+			meshRenderer.sharedMesh = avatarHeadRequest.Result.mesh;
+			detailsLevelText.text = string.Format("Triangles count:\n{0}", meshRenderer.sharedMesh.triangles.Length / 3);
 		}
 	}
 }

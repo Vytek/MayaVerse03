@@ -25,12 +25,11 @@ namespace ItSeez3D.AvatarSdk.Core
 	public static class PlyReader
 	{
 		/// <summary>
-		/// In .ply uv-coordinates are stored per face (three pairs of coordinates for each of three vertices of the
-		/// triangle.
+		/// In .ply uv-coordinates are stored per face (three pairs of coordinates for each of three vertices of the triangle).
 		/// </summary>
 		public struct FaceUv
 		{
-			public Vector2[] uv;
+			public Vector2 uv0, uv1, uv2;
 		}
 
 		/// <summary>
@@ -43,9 +42,11 @@ namespace ItSeez3D.AvatarSdk.Core
 			List<string> lines = new List<string> ();
 			List<byte> lineBytes = new List<byte> ();
 
-			while (true) {
+			while (true)
+			{
 				var b = reader.ReadByte ();
-				if (b == '\n') {
+				if (b == '\n')
+				{
 					var line = Encoding.UTF8.GetString (lineBytes.ToArray ());
 					lineBytes.Clear ();
 
@@ -54,7 +55,9 @@ namespace ItSeez3D.AvatarSdk.Core
 
 					if (line == "end_header")
 						break;
-				} else {
+				}
+				else
+				{
 					lineBytes.Add (b);
 				}
 			}
@@ -73,7 +76,8 @@ namespace ItSeez3D.AvatarSdk.Core
 		public static void ParseHeader (List<string> header, out int numVertices, out int numFaces)
 		{
 			numVertices = numFaces = 0;
-			foreach (var line in header) {
+			foreach (var line in header)
+			{
 				var tokens = line.Split (' ');
 				if (line.StartsWith ("element vertex"))
 					numVertices = int.Parse (tokens [tokens.Length - 1]);
@@ -84,7 +88,64 @@ namespace ItSeez3D.AvatarSdk.Core
 		}
 
 		/// <summary>
-		/// Reads the data from .ply format.
+		/// Reads the data from .ply format using a proxy BinaryReader object. This is slow.
+		/// </summary>
+		/// <param name="reader">.NET Binary reader.</param>
+		/// <param name="vertices">Array of vertices.</param>
+		/// <param name="triangles">Triangles, just like in Unity's mesh.</param>
+		/// <param name="faceUv">Uv-coordinates per face (see FaceUv comments).</param>
+		/// <param name="useLeftHandedCoordinates">In case if Left-Handed coordinate system is used in 3D viewer (should always be true for Unity)</param>
+		public static void ReadDataBinaryStream (
+			BinaryReader reader, Vector3[] vertices, int[] triangles = null, FaceUv[] faceUv = null, bool useLeftHandedCoordinates = true
+		)
+		{
+			for (int i = 0; i < vertices.Length; ++i)
+			{
+				vertices [i] = new Vector3 ((-1.0f) * reader.ReadSingle (), reader.ReadSingle (), reader.ReadSingle ());
+				if (!useLeftHandedCoordinates)
+					vertices [i].x *= -1.0f;
+			}
+
+			if (triangles != null && faceUv != null)
+			{
+				int numFaces = triangles.Length / 3;
+				for (int faceIdx = 0; faceIdx < numFaces; ++faceIdx)
+				{
+					int numFaceVertices = reader.ReadByte ();  // must be 3
+					if (useLeftHandedCoordinates)
+					{
+						for (int j = numFaceVertices - 1; j >= 0; --j)
+							triangles [faceIdx * 3 + j] = reader.ReadInt32 ();
+					}
+					else
+					{
+						for (int j = 0; j < numFaceVertices; ++j)
+							triangles [faceIdx * 3 + j] = reader.ReadInt32 ();
+					}
+
+					reader.ReadByte ();  // number of uv coords, must be 6
+
+					if (useLeftHandedCoordinates) {
+						faceUv[faceIdx].uv2.x = reader.ReadSingle ();
+						faceUv[faceIdx].uv2.y = reader.ReadSingle ();
+						faceUv[faceIdx].uv1.x = reader.ReadSingle ();
+						faceUv[faceIdx].uv1.y = reader.ReadSingle ();
+						faceUv[faceIdx].uv0.x = reader.ReadSingle ();
+						faceUv[faceIdx].uv0.y = reader.ReadSingle ();
+					} else {
+						faceUv[faceIdx].uv0.x = reader.ReadSingle ();
+						faceUv[faceIdx].uv0.y = reader.ReadSingle ();
+						faceUv[faceIdx].uv1.x = reader.ReadSingle ();
+						faceUv[faceIdx].uv1.y = reader.ReadSingle ();
+						faceUv[faceIdx].uv2.x = reader.ReadSingle ();
+						faceUv[faceIdx].uv2.y = reader.ReadSingle ();
+					}
+				}
+			}
+		}
+
+		/// <summary>
+		/// Reads the data from .ply format using unsafe arrays. This is about 10 times faster than BinaryReader.
 		/// </summary>
 		/// <param name="reader">.NET Binary reader.</param>
 		/// <param name="vertices">Array of vertices.</param>
@@ -95,34 +156,139 @@ namespace ItSeez3D.AvatarSdk.Core
 			BinaryReader reader, Vector3[] vertices, int[] triangles = null, FaceUv[] faceUv = null, bool useLeftHandedCoordinates = true
 		)
 		{
-			for (int i = 0; i < vertices.Length; ++i) {
-				vertices [i] = new Vector3 ((-1.0f) * reader.ReadSingle (), reader.ReadSingle (), reader.ReadSingle ());
+			// AvatarSDK provides meshes in a fixed format, therefore we know the number of bytes ahead of time. Won't work for all ply's though (need to parse header).
+			int floatSize = sizeof (float), int32Size = 4;
+			int totalNumBytes = vertices.Length * 3 * floatSize;
+			int faceVertices = 3;
+			int numFaces = triangles != null ? triangles.Length / faceVertices : 0;
+			int bytesPerFace =
+				+ 1                                  // num vertices per face (3)
+				+ faceVertices * int32Size           // face vertex indices
+				+ 1                                  // 1 byte for the number of uv coorinates per face
+				+ faceVertices * 2 * floatSize;      // 6 uv coordinates per triangle
+
+			if (triangles != null && faceUv != null)
+				totalNumBytes += numFaces * bytesPerFace;
+
+			var buf = reader.ReadBytes (totalNumBytes);
+			int ofs = 0;
+
+			unsafe
+			{
+				fixed (byte* bytePtr = &buf[0])
+				{
+					for (int i = 0; i < vertices.Length; ++i, ofs += 3 * floatSize)
+					{
+						float* ptr = (float*) (bytePtr + ofs);
+						vertices[i].x = -(*ptr);
+						vertices[i].y = *(ptr + 1);
+						vertices[i].z = *(ptr + 2);
+					}
+				}
+
+				// this should never be needed in an actual plugin
 				if (!useLeftHandedCoordinates)
-					vertices [i].x *= -1.0f;
-			}
+					for (int i = 0; i < vertices.Length; ++i)
+						vertices[i] *= -1;
 
-			if (triangles != null && faceUv != null) {
-				int numFaces = triangles.Length / 3;
-				for (int faceIdx = 0; faceIdx < numFaces; ++faceIdx) {
-					int numFaceVertices = reader.ReadByte ();  // must be 3
-					if (useLeftHandedCoordinates) {
-						for (int j = numFaceVertices - 1; j >= 0; --j)
-							triangles [faceIdx * 3 + j] = reader.ReadInt32 ();
-					} else {
-						for (int j = 0; j < numFaceVertices; ++j)
-							triangles [faceIdx * 3 + j] = reader.ReadInt32 ();
+				if (triangles != null && faceUv != null)
+				{
+#if UNITY_ANDROID || UNITY_WEBGL
+					// On android we can't use float* that points on address which is not a multiple of 4
+					// So use BitConverter instead of pure pointers casting.
+					for (int faceIdx = 0; faceIdx < numFaces; ++faceIdx)
+					{
+						++ofs;  // skip 1-byte number of vertices (always equal to 3 anyway)
+
+						if (useLeftHandedCoordinates)
+						{
+							for (int j = faceVertices - 1; j >= 0; --j, ofs += int32Size)
+								triangles[faceIdx * 3 + j] = BitConverter.ToInt32(buf, ofs); //*(int*) ptr;
+						}
+						else
+						{
+							for (int j = 0; j < faceVertices; ++j, ofs += int32Size)
+								triangles[faceIdx * 3 + j] = BitConverter.ToInt32(buf, ofs); //*(int*) ptr;
+						}
+
+						++ofs;  // skip number of uv coords, must always be 6
+
+						if (useLeftHandedCoordinates)
+						{
+							faceUv[faceIdx].uv2.x = BitConverter.ToSingle(buf, ofs);
+							ofs += floatSize;
+							faceUv[faceIdx].uv2.y = BitConverter.ToSingle(buf, ofs);
+							ofs += floatSize;
+							faceUv[faceIdx].uv1.x = BitConverter.ToSingle(buf, ofs);
+							ofs += floatSize;
+							faceUv[faceIdx].uv1.y = BitConverter.ToSingle(buf, ofs);
+							ofs += floatSize;
+							faceUv[faceIdx].uv0.x = BitConverter.ToSingle(buf, ofs);
+							ofs += floatSize;
+							faceUv[faceIdx].uv0.y = BitConverter.ToSingle(buf, ofs);
+							ofs += floatSize;
+						}
+						else
+						{
+							faceUv[faceIdx].uv0.x = BitConverter.ToSingle(buf, ofs);
+							ofs += floatSize;
+							faceUv[faceIdx].uv0.y = BitConverter.ToSingle(buf, ofs);
+							ofs += floatSize;
+							faceUv[faceIdx].uv1.x = BitConverter.ToSingle(buf, ofs);
+							ofs += floatSize;
+							faceUv[faceIdx].uv1.y = BitConverter.ToSingle(buf, ofs);
+							ofs += floatSize;
+							faceUv[faceIdx].uv2.x = BitConverter.ToSingle(buf, ofs);
+							ofs += floatSize;
+							faceUv[faceIdx].uv2.y = BitConverter.ToSingle(buf, ofs);
+							ofs += floatSize;
+						}
 					}
+#else
+					fixed (byte* bytePtr = &buf[ofs])
+					{
+						byte* ptr = bytePtr;
 
-					reader.ReadByte ();  // number of uv coords, must be 6
+						for (int faceIdx = 0; faceIdx < numFaces; ++faceIdx)
+						{
+							++ptr;  // skip 1-byte number of vertices (always equal to 3 anyway)
 
-					faceUv [faceIdx].uv = new Vector2[3];
-					if (useLeftHandedCoordinates) {
-						for (int j = numFaceVertices - 1; j >= 0; --j)
-							faceUv [faceIdx].uv [j] = new Vector2 (reader.ReadSingle (), reader.ReadSingle ());
-					} else {
-						for (int j = 0; j < numFaceVertices; ++j)
-							faceUv [faceIdx].uv [j] = new Vector2 (reader.ReadSingle (), reader.ReadSingle ());
+							if (useLeftHandedCoordinates)
+							{
+								for (int j = faceVertices - 1; j >= 0; --j, ptr += int32Size)
+									triangles[faceIdx * 3 + j] = *(int*)ptr;
+							}
+							else
+							{
+								for (int j = 0; j < faceVertices; ++j, ptr += int32Size)
+									triangles[faceIdx * 3 + j] = *(int*)ptr;
+							}
+
+							++ptr;  // skip number of uv coords, must always be 6
+
+							float* fPtr = (float*)ptr;
+							if (useLeftHandedCoordinates)
+							{
+								faceUv[faceIdx].uv2.x = *(fPtr++);
+								faceUv[faceIdx].uv2.y = *(fPtr++);
+								faceUv[faceIdx].uv1.x = *(fPtr++);
+								faceUv[faceIdx].uv1.y = *(fPtr++);
+								faceUv[faceIdx].uv0.x = *(fPtr++);
+								faceUv[faceIdx].uv0.y = *(fPtr++);
+							}
+							else
+							{
+								faceUv[faceIdx].uv0.x = *(fPtr++);
+								faceUv[faceIdx].uv0.y = *(fPtr++);
+								faceUv[faceIdx].uv1.x = *(fPtr++);
+								faceUv[faceIdx].uv1.y = *(fPtr++);
+								faceUv[faceIdx].uv2.x = *(fPtr++);
+								faceUv[faceIdx].uv2.y = *(fPtr++);
+							}
+							ptr = (byte*)fPtr;
+						}
 					}
+#endif
 				}
 			}
 		}
@@ -159,21 +325,26 @@ namespace ItSeez3D.AvatarSdk.Core
 				vertexUv [i] = uninitialized;
 
 			int numFaces = triangles.Length / 3, numVertices = originalVertices.Length;
-			for (int faceIdx = 0; faceIdx < numFaces; ++faceIdx) {
-				for (int j = 0; j < 3; ++j) {
-					int vertexIdx = triangles [faceIdx * 3 + j];
-					Vector2 currentUv = faceUv [faceIdx].uv [j];
+			unsafe {
+				fixed (FaceUv* faceUvBufPtr = &faceUv[0]) {
+					Vector2* faceUvPtr = (Vector2*) faceUvBufPtr;
 
-					// Iterate over duplicates of this vertex until we find copy with exact same uv.
-					// Create new duplicate vertex if none were found.
-					while (vertexUv [vertexIdx] != uninitialized && vertexUv [vertexIdx] != currentUv) {
-						if (duplicate [vertexIdx] == -1)
-							duplicate [vertexIdx] = numVertices++;  // "allocate" new vertex and save link to it
-						vertexIdx = duplicate [vertexIdx];
+					for (int faceIdx = 0, offset = 0; faceIdx < numFaces; ++faceIdx) {
+						for (int j = 0; j < 3; ++j, ++faceUvPtr, ++offset) {
+							int vertexIdx = triangles[offset];
+
+							// Iterate over duplicates of this vertex until we find copy with exact same uv.
+							// Create new duplicate vertex if none were found.
+							while (vertexUv[vertexIdx] != uninitialized && vertexUv[vertexIdx] != *faceUvPtr) {
+								if (duplicate[vertexIdx] == -1)
+									duplicate[vertexIdx] = numVertices++;  // "allocate" new vertex and save link to it
+								vertexIdx = duplicate[vertexIdx];
+							}
+
+							vertexUv[vertexIdx] = *faceUvPtr;
+							triangles[offset] = vertexIdx;
+						}
 					}
-
-					vertexUv [vertexIdx] = currentUv;
-					triangles [faceIdx * 3 + j] = vertexIdx;
 				}
 			}
 
@@ -188,12 +359,6 @@ namespace ItSeez3D.AvatarSdk.Core
 				while (duplicateIdx != -1) {
 					vertices [duplicateIdx] = vertices [i];
 					indexMap [duplicateIdx] = i;
-					Debug.AssertFormat (
-						indexMap [duplicateIdx] < originalVertices.Length,
-						"Original index must be less than {0} but is actually {1}",
-						originalVertices.Length, indexMap [duplicateIdx]
-					);
-
 					duplicateIdx = duplicate [duplicateIdx];
 				}
 			}

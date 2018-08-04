@@ -15,6 +15,7 @@ using System.Linq;
 using UnityEngine;
 using ItSeez3D.AvatarSdk.Core;
 using System.IO;
+using System.Text;
 
 namespace ItSeez3D.AvatarSdk.Cloud
 {
@@ -25,13 +26,33 @@ namespace ItSeez3D.AvatarSdk.Cloud
 	{
 		private Connection connection = new Connection();
 
-		//cached data
+		// cached avatar data to reduce requests to the server
+		private Dictionary<string, AvatarData> avatarsDataCache = new Dictionary<string, AvatarData>();
+
+		// cached haircuts data
 		private Dictionary<string, AvatarHaircutData[]> haircutsDataCache = new Dictionary<string, AvatarHaircutData[]>();
+
+		private List<string> supportedHaircutsPipelines = new List<string>() {
+			PipelineType.FACE.GetPipelineTypeName(),
+			string.Empty  // TODO
+		};
+
+		// Object to get available resources
+		private IResourceManager resourceManager = null;
+
+		/// <summary>
+		/// This is generally not for production use.
+		/// Enabling this boolean variable enables you to skip the authentication and still use some of the "offline" features of this avatar provider
+		/// (such as loading a model from disk).
+		/// However, you won't be able to create new avatars or load data from server.
+		/// </summary>
+		private bool noInternetMode = false;
 
 		#region Constructor
 		public CloudAvatarProvider()
 		{
 			UseCache = true;
+			resourceManager = new CloudResourceManager(connection);
 		}
 		#endregion
 
@@ -41,19 +62,12 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		/// </summary>
 		public AsyncRequest InitializeAsync()
 		{
+			if (noInternetMode)
+				return new AsyncRequest { IsDone = true };
+
 			// Obtain auth token asynchronously. This code will also create PlayerUID and
 			// store it in persistent storage. Auth token and PlayerUID are required all further HTTP requests.
 			return connection.AuthorizeAsync();
-		}
-
-		/// <summary>
-		/// Initializes avatar and uploads photo to the server.
-		/// </summary>
-		public AsyncRequest<string> InitializeAvatarAsync(byte[] photoBytes)
-		{
-			var request = new AsyncRequest<string>(AvatarSdkMgr.Str(Strings.InitializingAvatar));
-			AvatarSdkMgr.SpawnCoroutine(InitializeAvatarFunc("test_avatar", "test_description", false, photoBytes, request));
-			return request;
 		}
 
 		/// <summary>
@@ -117,6 +131,18 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		}
 
 		/// <summary>
+		/// Downloads from the server haircut preview image and saves it locally.
+		/// Note: this method isn't implemented yet.
+		/// </summary>
+		/// <param name="haircutId">Haircut identity</param>
+		public AsyncRequest<byte[]> GetHaircutPreviewAsync(string avatarCode, string haircutId)
+		{
+			var request = new AsyncRequest<byte[]>(AvatarSdkMgr.Str(Strings.GettingHaircutPreview));
+			AvatarSdkMgr.SpawnCoroutine(GetHaircutPreviewFunc(avatarCode, haircutId, request));
+			return request;
+		}
+
+		/// <summary>
 		/// Requests from the server identities of the latest "maxItems" avatars.
 		/// </summary>
 		public AsyncRequest<string[]> GetAllAvatarsAsync(int maxItems)
@@ -135,14 +161,14 @@ namespace ItSeez3D.AvatarSdk.Cloud
 			AvatarSdkMgr.SpawnCoroutine(DeleteAvatarFunc(avatarCode, request));
 			return request;
 		}
-		#endregion
+#endregion
 
-		#region IDisposable
+#region IDisposable
 		/// <summary>
 		/// Empty method in Cloud version
 		/// </summary>
 		public virtual void Dispose() { }
-		#endregion
+#endregion
 
 		#region public methods
 		/// <summary>
@@ -159,15 +185,16 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		/// <summary>
 		/// Initializes avatar and uploads photo to the server.
 		/// </summary>
+		/// <param name="photoBytes">Photo bytes (jpg or png encoded).</param>
 		/// <param name="name">Name of the avatar</param>
 		/// <param name="description">Description of the avatar</param>
-		/// <param name="forcePowerOfTwoTexture">In case of true, generated texture resolution will be power of 2</param>
-		/// <param name="photoBytes">Photo bytes (jpg or png encoded).</param>
-		/// <returns></returns>
-		public AsyncRequest<string> InitializeAvatarAsync(string name, string description, bool forcePowerOfTwoTexture, byte[] photoBytes)
+		/// <param name="pipeline">Calculation pipeline to use</param>
+		/// <returns>Avatar unique code</returns>
+		public AsyncRequest<string> InitializeAvatarAsync(byte[] photoBytes, string name, string description, PipelineType pipeline = PipelineType.FACE,
+			AvatarResources avatarResources = null)
 		{
 			var request = new AsyncRequest<string>(AvatarSdkMgr.Str(Strings.GeneratingAvatar));
-			AvatarSdkMgr.SpawnCoroutine(InitializeAvatarFunc(name, description, forcePowerOfTwoTexture, photoBytes, request));
+			AvatarSdkMgr.SpawnCoroutine(InitializeAvatarFunc(photoBytes, name, description, pipeline, avatarResources, request));
 			return request;
 		}
 
@@ -218,6 +245,16 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		}
 
 		/// <summary>
+		/// Download haircut preview and save it to disk
+		/// </summary>
+		public AsyncRequest DownloadAndSaveHaircutPreviewAsync(AvatarHaircutData haircutData)
+		{
+			var request = new AsyncRequest(AvatarSdkMgr.Str(Strings.GettingHaircutPreview));
+			AvatarSdkMgr.SpawnCoroutine(DownloadAndSaveHaircutPreviewFunc(haircutData, request));
+			return request;
+		}
+
+		/// <summary>
 		/// Process blendshapes slightly differently compared to other zips (for compatibility reasons).
 		/// Blendshapes are unzipped not just in avatar directory, but in their own personal folder.
 		/// </summary>
@@ -228,6 +265,14 @@ namespace ItSeez3D.AvatarSdk.Cloud
 			var blendshapesDir = AvatarSdkMgr.Storage().GetAvatarSubdirectory(avatarCode, AvatarSubdirectory.BLENDSHAPES);
 			return CoreTools.UnzipFileAsync(blendshapesZip, blendshapesDir);
 		}
+
+		/// <summary>
+		/// Returns resource manager
+		/// </summary>
+		public IResourceManager ResourceManager
+		{
+			get { return resourceManager; }
+		}
 		#endregion
 
 		#region private methods
@@ -235,10 +280,11 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		/// <summary>
 		/// InitializeAvatarAsync implementation
 		/// </summary>
-		private IEnumerator InitializeAvatarFunc(string name, string description, bool forcePowerOfTwoTexture, byte[] photoBytes, AsyncRequest<string> request)
+		private IEnumerator InitializeAvatarFunc(byte[] photoBytes, string name, string description, PipelineType pipeline, 
+			AvatarResources resources, AsyncRequest<string> request)
 		{
 			// uploading photo and registering new avatar on the server
-			var createAvatar = connection.CreateAvatarWithPhotoAsync(name, description, photoBytes, forcePowerOfTwoTexture);
+			var createAvatar = connection.CreateAvatarWithPhotoAsync(name, description, photoBytes, false, pipeline, resources);
 
 			// Wait until async request is completed (without blocking the main thread).
 			// Instead of using AwaitSubrequest we could just use `yield return createAvatar;`
@@ -257,7 +303,9 @@ namespace ItSeez3D.AvatarSdk.Cloud
 
 			// save photo for later use
 			var savePhoto = CoreTools.SaveAvatarFileAsync(photoBytes, avatarCode, AvatarFile.PHOTO);
-			yield return request.AwaitSubrequest(savePhoto, finalProgress: 1.0f);
+			// save pipeline type
+			var savePipeline = CoreTools.SaveAvatarFileAsync(Encoding.ASCII.GetBytes(pipeline.GetPipelineTypeName()), avatarCode, AvatarFile.PIPELINE_INFO);
+			yield return request.AwaitSubrequests(1.0f, savePhoto, savePipeline);
 
 			// again, must check for the error, there's no point in proceeding otherwise
 			if (request.IsError)
@@ -272,10 +320,13 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		/// </summary>
 		private IEnumerator StartAndAwaitAvatarCalculationFunc(string avatarCode, AsyncRequest request)
 		{
-			var avatarRequest = connection.GetAvatarAsync(avatarCode);
-			yield return  request.AwaitSubrequest(avatarRequest, 0.01f);
-			if (request.IsError)
+			var avatarRequest = GetAvatarAsync(avatarCode);
+			yield return avatarRequest.Await();
+			if (avatarRequest.IsError)
+			{
+				request.SetError(avatarRequest.ErrorMessage);
 				yield break;
+			}
 
 			var awaitCalculations = connection.AwaitAvatarCalculationsAsync(avatarRequest.Result);
 			yield return request.AwaitSubrequest(awaitCalculations, finalProgress: 1.0f);
@@ -296,7 +347,7 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		/// </summary>
 		private IEnumerator MoveAvatarModelToLocalStorage(string avatarCode, bool withHaircutPointClouds, bool withBlendshapes, AsyncRequest request)
 		{
-			var avatarRequest = connection.GetAvatarAsync(avatarCode);
+			var avatarRequest = GetAvatarAsync(avatarCode);
 			yield return avatarRequest.Await();
 			if (avatarRequest.IsError)
 			{
@@ -330,8 +381,13 @@ namespace ItSeez3D.AvatarSdk.Cloud
 
 			if (withHaircutPointClouds)
 			{
-				allHaircutPointCloudsZip = connection.DownloadAllHaircutPointCloudsZipAsync(avatar);
-				download.Add(allHaircutPointCloudsZip);
+				if (supportedHaircutsPipelines.Contains(avatar.pipeline))
+				{
+					allHaircutPointCloudsZip = connection.DownloadAllHaircutPointCloudsZipAsync(avatar);
+					download.Add(allHaircutPointCloudsZip);
+				}
+				else
+					Debug.LogWarningFormat("{0} doesn't support haircuts", avatar.pipeline);
 			}
 
 			if (withBlendshapes)
@@ -368,13 +424,13 @@ namespace ItSeez3D.AvatarSdk.Cloud
 				save.Add(saveHaircutPointsZip);
 			}
 
-			if (blendshapesZip != null)
+			if (blendshapesZip != null && blendshapesZip.Result.Length > 0)
 			{
 				saveBlendshapesZip = CoreTools.SaveAvatarFileAsync(blendshapesZip.Result, avatar.code, AvatarFile.BLENDSHAPES_ZIP);
 				save.Add(saveBlendshapesZip);
 			}
 
-			#if BLENDSHAPES_IN_PLY_OR_FBX
+#if BLENDSHAPES_IN_PLY_OR_FBX
 			// just a sample of how to get blendshapes in a different format
 
 			if (blendshapesZipFbx != null) {
@@ -386,7 +442,7 @@ namespace ItSeez3D.AvatarSdk.Cloud
 				var saveBlendshapesZipPly = CoreTools.SaveAvatarFileAsync (blendshapesZipPly.Result, avatar.code, AvatarFile.BLENDSHAPES_PLY_ZIP);
 				save.Add (saveBlendshapesZipPly);
 			}
-			#endif
+#endif
 
 			yield return request.AwaitSubrequests(0.95f, save.ToArray());
 			if (request.IsError)
@@ -438,10 +494,13 @@ namespace ItSeez3D.AvatarSdk.Cloud
 			{
 				// get AvatarData firstly.
 				// If you would like to make multiple requests for getting haircut data, it is better to get AvatarData only once and store it somewhere
-				var avatarRequest = connection.GetAvatarAsync(avatarCode);
-				yield return request.AwaitSubrequest(avatarRequest, 0.45f);
-				if (request.IsError)
+				var avatarRequest = GetAvatarAsync(avatarCode);
+				yield return avatarRequest.Await();
+				if (avatarRequest.IsError)
+				{
+					request.SetError(avatarRequest.ErrorMessage);
 					yield break;
+				}
 
 				var haircutInfoRequest = connection.GetHaircutsAsync(avatarRequest.Result);
 				yield return request.AwaitSubrequest(haircutInfoRequest, 0.9f);
@@ -473,20 +532,30 @@ namespace ItSeez3D.AvatarSdk.Cloud
 				request.Result = haircutsDataCache[avatarCode].Select(h => h.identity).ToArray();
 			else
 			{
-				var avatarRequest = connection.GetAvatarAsync(avatarCode);
-				yield return request.AwaitSubrequest(avatarRequest, 0.45f);
-				if (request.IsError)
+				var avatarRequest = GetAvatarAsync(avatarCode);
+				yield return avatarRequest.Await();
+				if (avatarRequest.IsError)
+				{
+					request.SetError(avatarRequest.ErrorMessage);
 					yield break;
+				}
 
-				var haircutInfoRequest = connection.GetHaircutsAsync(avatarRequest.Result);
-				yield return request.AwaitSubrequest(haircutInfoRequest, 0.9f);
-				if (request.IsError)
-					yield break;
+				if (supportedHaircutsPipelines.Contains(avatarRequest.Result.pipeline))
+				{
+					var haircutInfoRequest = connection.GetHaircutsAsync(avatarRequest.Result);
+					yield return request.AwaitSubrequest(haircutInfoRequest, 0.9f);
+					if (request.IsError)
+						yield break;
 
-				request.Result = haircutInfoRequest.Result.Select(h => h.identity).ToArray();
+					request.Result = haircutInfoRequest.Result.Select(h => h.identity).ToArray();
 
-				if (UseCache)
-					haircutsDataCache.Add(avatarCode, haircutInfoRequest.Result);
+					if (UseCache)
+						haircutsDataCache.Add(avatarCode, haircutInfoRequest.Result);
+				}
+				else
+				{
+					Debug.LogFormat("{0} doesn't support haircuts", avatarRequest.Result.pipeline);
+				}
 			}
 
 			request.IsDone = true;
@@ -521,6 +590,26 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		}
 
 		/// <summary>
+		/// DownloadAndSaveHaircutPreviewAsync implementation
+		/// </summary>
+		private IEnumerator DownloadAndSaveHaircutPreviewFunc(AvatarHaircutData haircutData, AsyncRequest request)
+		{
+			Debug.LogFormat("Downloading haircut preview...");
+			var haircutPreviewRequest = connection.DownloadHaircutPreviewBytesAsync(haircutData);
+			yield return request.AwaitSubrequest(haircutPreviewRequest, 0.8f);
+			if (request.IsError)
+				yield break;
+
+			Debug.LogFormat("Saving haircut preview to disk...");
+			var saveHaircutPreviewRequest = CoreTools.SaveHaircutFileAsync(haircutPreviewRequest.Result, haircutData.identity, HaircutFile.HAIRCUT_PREVIEW);
+			yield return request.AwaitSubrequest(saveHaircutPreviewRequest, 0.9f);
+			if (request.IsError)
+				yield break;
+
+			request.IsDone = true;
+		}
+
+		/// <summary>
 		/// DownloadAndSaveHaircutPointsAsync implementation
 		/// </summary>
 		private IEnumerator DownloadAndSaveHaircutPointsFunc(string avatarCode, AvatarHaircutData haircutData, AsyncRequest request)
@@ -530,7 +619,7 @@ namespace ItSeez3D.AvatarSdk.Cloud
 			if (request.IsError)
 				yield break;
 
-			var saveHaircutPointsRequest = CoreTools.SaveAvatarHaircutFileAsync(haircutPointsRequest.Result, avatarCode, haircutData.identity, AvatarFile.HAIRCUT_POINT_CLOUD_ZIP);
+			var saveHaircutPointsRequest = CoreTools.SaveAvatarHaircutPointCloudZipFileAsync(haircutPointsRequest.Result, avatarCode, haircutData.identity);
 			yield return request.AwaitSubrequest(saveHaircutPointsRequest, 0.95f);
 			if (request.IsError)
 				yield break;
@@ -557,7 +646,7 @@ namespace ItSeez3D.AvatarSdk.Cloud
 			// If mesh and texture are not cached yet, lets download and save them.
 			string haircutMeshFilename = AvatarSdkMgr.Storage().GetHaircutFilename(haircutId, HaircutFile.HAIRCUT_MESH_PLY);
 			string haircutTextureFilename = AvatarSdkMgr.Storage().GetHaircutFilename(haircutId, HaircutFile.HAIRCUT_TEXTURE);
-			string haircutPointCloudFilename = AvatarSdkMgr.Storage().GetAvatarHaircutFilename(avatarCode, haircutId, AvatarFile.HAIRCUT_POINT_CLOUD_PLY);
+			string haircutPointCloudFilename = AvatarSdkMgr.Storage().GetAvatarHaircutPointCloudFilename(avatarCode, haircutId);
 
 			bool existMeshFiles = File.Exists(haircutMeshFilename) && File.Exists(haircutTextureFilename);
 			bool existPointcloud = File.Exists(haircutPointCloudFilename);
@@ -589,22 +678,63 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		}
 
 		/// <summary>
+		/// GetHaircutPreviewAsync implementation
+		/// </summary>
+		private IEnumerator GetHaircutPreviewFunc(string avatarCode, string haircutId, AsyncRequest<byte[]> request)
+		{
+			string haircutPreviewFilename = AvatarSdkMgr.Storage().GetHaircutFilename(haircutId, HaircutFile.HAIRCUT_PREVIEW);
+
+			if (!File.Exists(haircutPreviewFilename))
+			{
+				var haircutDataRequest = GetHaircutDataAsync(avatarCode, haircutId);
+				yield return request.AwaitSubrequest(haircutDataRequest, 0.05f);
+				if (request.IsError)
+					yield break;
+
+				var downloadRequest = DownloadAndSaveHaircutPreviewAsync(haircutDataRequest.Result);
+
+				yield return request.AwaitSubrequest(downloadRequest, 0.9f);
+				if (request.IsError)
+					yield break;
+			}
+
+			byte[] previewBytes = File.ReadAllBytes(haircutPreviewFilename);
+
+			request.IsDone = true;
+			request.Result = previewBytes;
+		}
+
+		/// <summary>
 		/// GetHeadMeshAsync implementation
 		/// </summary>
 		private IEnumerator GetHeadMeshFunc(string avatarCode, bool withBlendshapes, int detailsLevel, AsyncRequest<TexturedMesh> request)
 		{
+			// Need to verify if this avatar supports Level Of Details
+			if (detailsLevel > 0)
+			{
+				var avatarRequest = GetAvatarAsync(avatarCode);
+				yield return avatarRequest;
+				if (avatarRequest.IsError)
+					yield break;
+				if (string.Compare(avatarRequest.Result.pipeline, PipelineType.FACE.GetPipelineTypeName()) != 0)
+				{
+					Debug.LogWarningFormat("Avatar created by {0} doesn't support Level Of Details. Will be used LOD 0.", avatarRequest.Result.pipeline);
+					detailsLevel = 0;
+				}
+			}
+
 			string meshFilename = AvatarSdkMgr.Storage().GetAvatarFilename(avatarCode, AvatarFile.MESH_PLY);
 			string textureFilename = AvatarSdkMgr.Storage().GetAvatarFilename(avatarCode, AvatarFile.TEXTURE);
 			//If there are no required files, will download them.
 			if (!File.Exists(meshFilename) || !File.Exists(textureFilename))
 			{
 				var avatarRequest = connection.GetAvatarAsync(avatarCode);
-				yield return request.AwaitSubrequest(avatarRequest, 0.05f);
-				if (request.IsError)
+				yield return avatarRequest;
+				if (avatarRequest.IsError)
 					yield break;
 
 				var downloadRequest = DownloadAndSaveAvatarModelAsync(avatarRequest.Result, false, withBlendshapes);
-				yield return request.AwaitSubrequest(downloadRequest, 0.95f);
+				yield return request.AwaitSubrequest(downloadRequest, 0.5f);
 				if (request.IsError)
 					yield break;
 			}
@@ -615,8 +745,8 @@ namespace ItSeez3D.AvatarSdk.Cloud
 			if (withBlendshapes && !blendshapesExist)
 			{
 				var avatarRequest = connection.GetAvatarAsync(avatarCode);
-				yield return request.AwaitSubrequest(avatarRequest, 0.05f);
-				if (request.IsError)
+				yield return avatarRequest;
+				if (avatarRequest.IsError)
 					yield break;
 
 				var downloadBlendshapes = connection.DownloadBlendshapesZipAsync(avatarRequest.Result, BlendshapesFormat.BIN, detailsLevel);
@@ -624,17 +754,21 @@ namespace ItSeez3D.AvatarSdk.Cloud
 				if (request.IsError)
 					yield break;
 
-				var saveBlendshapesZip = CoreTools.SaveAvatarFileAsync(downloadBlendshapes.Result, avatarCode, AvatarFile.BLENDSHAPES_ZIP);
-				yield return request.AwaitSubrequest(saveBlendshapesZip, 0.9f);
-				if (request.IsError)
-					yield break;
+				byte[] blendshapesZipBytes = downloadBlendshapes.Result;
+				if (blendshapesZipBytes != null && blendshapesZipBytes.Length > 0)
+				{
+					var saveBlendshapesZip = CoreTools.SaveAvatarFileAsync(downloadBlendshapes.Result, avatarCode, AvatarFile.BLENDSHAPES_ZIP);
+					yield return request.AwaitSubrequest(saveBlendshapesZip, 0.9f);
+					if (request.IsError)
+						yield break;
 
-				var unzipBlendshapes = UnzipBlendshapesAsync(saveBlendshapesZip.Result, avatarCode);
-				yield return request.AwaitSubrequest(unzipBlendshapes, 0.95f);
-				if (request.IsError)
-					yield break;
+					var unzipBlendshapes = UnzipBlendshapesAsync(saveBlendshapesZip.Result, avatarCode);
+					yield return request.AwaitSubrequest(unzipBlendshapes, 0.95f);
+					if (request.IsError)
+						yield break;
 
-				CoreTools.DeleteAvatarFile(avatarCode, AvatarFile.BLENDSHAPES_ZIP);
+					CoreTools.DeleteAvatarFile(avatarCode, AvatarFile.BLENDSHAPES_ZIP);
+				}
 			}
 
 			// At this point all avatar files are already saved to disk. Let's load the files to Unity.
@@ -670,7 +804,7 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		/// </summary>
 		private IEnumerator DeleteAvatarFunc(string avatarCode, AsyncRequest request)
 		{
-			var avatarRequest = connection.GetAvatarAsync(avatarCode);
+			var avatarRequest = GetAvatarAsync(avatarCode);
 			yield return avatarRequest;
 			if (avatarRequest.IsError)
 			{
@@ -685,6 +819,45 @@ namespace ItSeez3D.AvatarSdk.Cloud
 
 			CoreTools.DeleteAvatarFiles(avatarCode);
 
+			request.IsDone = true;
+		}
+
+		/// <summary>
+		/// Get avatar information by code. Firstly finds data in cache. If there is no data in cache, requests it from the server
+		/// </summary>
+		private AsyncRequest<AvatarData> GetAvatarAsync(string avatarCode)
+		{
+			var request = new AsyncRequest<AvatarData>();
+			AvatarSdkMgr.SpawnCoroutine(GetAvatarFunc(avatarCode, request));
+			return request;
+		}
+
+		/// <summary>
+		/// GetAvatarAsync implementation
+		/// </summary>
+		private IEnumerator GetAvatarFunc(string avatarCode, AsyncRequest<AvatarData> request)
+		{
+			if (UseCache && avatarsDataCache.ContainsKey(avatarCode))
+			{
+				request.Result = avatarsDataCache[avatarCode];
+				request.IsDone = true;
+				yield break;
+			}
+
+			var avatarRequest = connection.GetAvatarAsync(avatarCode);
+			yield return avatarRequest;
+			if (avatarRequest.IsError)
+			{
+				request.SetError(avatarRequest.ErrorMessage);
+				yield break;
+			}
+
+			if (UseCache && string.Compare(avatarRequest.Result.status.ToLower(), "Completed") == 0)
+			{
+				avatarsDataCache[avatarCode] = avatarRequest.Result;
+			}
+
+			request.Result = avatarRequest.Result;
 			request.IsDone = true;
 		}
 		#endregion

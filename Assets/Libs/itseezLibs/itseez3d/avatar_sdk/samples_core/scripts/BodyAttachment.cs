@@ -133,7 +133,7 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 				var maxY = mesh.bounds.max.y;
 				var height = maxY - minY;
 
-				var neckBoneInfluence = 0.125f;  // bottom % of the vertices influenced by the neck bone
+				var neckBoneInfluence = 0.325f;  // bottom % of the vertices influenced by the neck bone
 
 				float eps = 1e-5f;
 				if (neckBoneIdx < 0)

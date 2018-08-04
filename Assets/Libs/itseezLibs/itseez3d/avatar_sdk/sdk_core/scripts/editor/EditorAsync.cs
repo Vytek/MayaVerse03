@@ -79,10 +79,9 @@ namespace ItSeez3D.AvatarSdk.Core.Editor
 			}
 		}
 
-		/// <summary>
-		/// Support only one coroutine at a time.
-		/// </summary>
 		private EditorCoroutine currentCoroutine;
+		private Queue<EditorCoroutine> waitingCoroutines = new Queue<EditorCoroutine>();
+		private object syncMutex = new object();
 
 		private static EditorCoroutineManager instance = null;
 
@@ -101,15 +100,37 @@ namespace ItSeez3D.AvatarSdk.Core.Editor
 
 		private EditorCoroutine StartCoroutine (IEnumerator routine)
 		{
-			currentCoroutine = new EditorCoroutine (routine);
-			EditorApplication.update += Update;
-			return currentCoroutine;
+			lock(syncMutex)
+			{
+				if (currentCoroutine == null)
+				{
+					currentCoroutine = new EditorCoroutine(routine);
+					EditorApplication.update += Update;
+					return currentCoroutine;
+				}
+				else
+				{
+					EditorCoroutine coroutine = new EditorCoroutine(routine);
+					waitingCoroutines.Enqueue(coroutine);
+					return coroutine;
+				}
+			}
 		}
 
 		private void StopCoroutine ()
 		{
-			EditorApplication.update -= Update;
-			currentCoroutine = null;
+			lock(syncMutex)
+			{
+				if (waitingCoroutines.Count > 0)
+				{
+					currentCoroutine = waitingCoroutines.Dequeue();
+				}
+				else
+				{
+					EditorApplication.update -= Update;
+					currentCoroutine = null;
+				}
+			}
 		}
 
 		private void Update ()
@@ -130,19 +151,34 @@ namespace ItSeez3D.AvatarSdk.Core.Editor
 				var currentYield = currentYieldObject as IEnumerator;
 				var nextYield = currentYield.Current;
 
-				if (nextYield == null) {
+				if (nextYield == null)
+				{
 					if (!currentYield.MoveNext ())
 						currentCoroutine.yields.Pop ();
-				} else if (nextYield is IEnumerator) {
+				}
+				else if (nextYield is AsyncOperation)
+				{
+					AsyncOperation op = nextYield as AsyncOperation;
+					if (op.isDone)
+					{
+						if (!currentYield.MoveNext())
+							currentCoroutine.yields.Pop();
+					}
+				}
+				else if (nextYield is IEnumerator)
+				{
 					// nested yield
 					if ((nextYield as IEnumerator).MoveNext ())
 						currentCoroutine.yields.Push (nextYield);
-					else {
+					else
+					{
 						// finished the nested yield, return back to the current one
 						if (!currentYield.MoveNext ())
 							currentCoroutine.yields.Pop ();
 					}
-				} else {
+				}
+				else
+				{
 					throw new Exception (string.Format ("Unsupported nested yield type: {0}", nextYield.GetType ().ToString ()));
 				}
 			} catch (Exception ex) {

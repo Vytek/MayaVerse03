@@ -30,25 +30,15 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 		// animations-related data
 		public RuntimeAnimatorController animatorController;
 		private Animator animator = null;
-		private List<string> animations = new List<string> {
-			"kiss",
-			"blink",
-			"chewing",
-			"mouth_left_right",
-			"puff",
-			"smile",
-			"yawning",
-		};
+		private List<string> animations = new List<string>();
 		private int currentAnimationIdx = 0;
 
-		void Start ()
+		public void CreateAnimator (GameObject obj, List<string> playingAnimations)
 		{
-			// initialize dynamic UI elements
-			ChangeCurrentAnimation (0);
-		}
+			animations = playingAnimations;
 
-		public void CreateAnimator (GameObject obj)
-		{
+			ChangeCurrentAnimation(0);
+
 			animator = obj.AddComponent<Animator> ();
 			animator.applyRootMotion = true;
 			animator.runtimeAnimatorController = animatorController;

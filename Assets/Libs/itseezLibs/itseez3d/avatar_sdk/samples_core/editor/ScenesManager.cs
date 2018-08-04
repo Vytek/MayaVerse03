@@ -24,8 +24,10 @@ namespace ItSeez3D.AvatarSdkSamples.Core.Editor
 	{
 		private static List<string> scenesWithViewer = new List<string> () {
 			"Assets/itseez3d/avatar_sdk/samples_cloud/02_gallery_sample_cloud/scenes/02_gallery_sample_cloud.unity",
-			"Assets/itseez3d/avatar_sdk/samples_cloud/05_webgl_sample/scenes/05_webgl_sample.unity",
-			"Assets/itseez3d/avatar_sdk/samples_offline/02_gallery_sample_offline/scenes/02_gallery_sample_offline.unity"
+			"Assets/itseez3d/avatar_sdk/samples_cloud/06_webgl_sample/scenes/06_webgl_sample.unity",
+			"Assets/itseez3d/avatar_sdk/samples_cloud/05_resources_sample_cloud/scenes/05_resources_sample_cloud.unity",
+			"Assets/itseez3d/avatar_sdk/samples_offline/02_gallery_sample_offline/scenes/02_gallery_sample_offline.unity",
+			"Assets/itseez3d/avatar_sdk/samples_offline/05_resources_sample_offline/scenes/05_resources_sample_offline.unity"
 		};
 
 		private static string viewerScenePath = "Assets/itseez3d/avatar_sdk/samples_core/scenes/avatar_viewer.unity";
@@ -43,7 +45,6 @@ namespace ItSeez3D.AvatarSdkSamples.Core.Editor
 
 		private static void EnableOpenedScenesInBuildSettings ()
 		{
-			Debug.LogFormat ("Enable scenes: {0}", EditorSceneManager.sceneCount);
 			List<string> openedScenes = new List<string> ();
 			for (int i = 0; i < EditorSceneManager.sceneCount; i++) {
 				Scene s = EditorSceneManager.GetSceneAt (i);
@@ -61,7 +62,8 @@ namespace ItSeez3D.AvatarSdkSamples.Core.Editor
 				if (scenesWithViewer.Contains (scene))
 					AddSceneIfNotExists (scenesInBuildSettings, viewerScenePath);
 			}
-			EditorBuildSettings.scenes = scenesInBuildSettings.ToArray ();
+			if (scenesInBuildSettings.Count != 1 || scenesInBuildSettings[0].path != viewerScenePath)
+				EditorBuildSettings.scenes = scenesInBuildSettings.ToArray ();
 		}
 
 		private static void AddSceneIfNotExists (List<EditorBuildSettingsScene> scenesList, string scenePath)

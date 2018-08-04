@@ -24,6 +24,10 @@ namespace ItSeez3D.AvatarSdk.Cloud
 {
 	public class Connection
 	{
+		#region constants
+		private readonly string pipeline_subtype = "base/legacy";
+		#endregion
+
 		#region Connection data
 
 		// access data
@@ -50,18 +54,35 @@ namespace ItSeez3D.AvatarSdk.Cloud
 			return string.Format ("{0}/{1}/", NetworkUtils.rootUrl, string.Join ("/", urlTokens));
 		}
 
+		/// <summary>
+		/// Urlencoded param string.
+		/// </summary>
+		public virtual string UrlWithParams(string url, Dictionary<string, string> param)
+		{
+			if (param == null || param.Count == 0)
+				return url;
+
+			var paramTokens = new List<string> ();
+			foreach (var item in param) {
+				var token = string.Format ("{0}={1}", WWW.EscapeURL (item.Key), WWW.EscapeURL (item.Value));
+				paramTokens.Add (token);
+			}
+
+			return string.Format ("{0}?{1}", url, string.Join ("&", paramTokens.ToArray()));
+		}
+
+		/// <summary>
+		/// Simple overload for a single-parameter use case.
+		/// </summary>
+		public virtual string UrlWithParams (string url, string param, string value)
+		{
+			return UrlWithParams (url, new Dictionary<string, string> { { param, value } });
+		}
+
 		/// <returns>Url used to obtain access token.</returns>
 		public virtual string GetAuthUrl ()
 		{
 			return GetUrl ("o", "token");
-		}
-
-		/// <summary>
-		/// Helper function that adds parameter to url
-		/// </summary>
-		public virtual string AddParamsToUrl(string url, string paramName, string paramValue)
-		{
-			return string.Format("{0}?{1}={2}", url, paramName, paramValue);
 		}
 
 		/// <returns>Dictionary with required auth HTTP headers.</returns>
@@ -81,7 +102,7 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		/// <summary>
 		/// Adds auth header to UnityWebRequest.
 		/// </summary>
-		private void SetAuthHeaders (UnityWebRequest request)
+		protected void SetAuthHeaders (UnityWebRequest request)
 		{
 			var headers = GetAuthHeaders ();
 			foreach (var h in headers)
@@ -92,7 +113,7 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		/// Helper factory method.
 		/// </summary>
 		/// <returns>Constructed UnityWebRequest object that does HTTP GET request for the given url.</returns>
-		private UnityWebRequest HttpGet (string url)
+		protected UnityWebRequest HttpGet (string url)
 		{
 			if (string.IsNullOrEmpty (url))
 				Debug.LogError ("Provided empty url!");
@@ -101,6 +122,12 @@ namespace ItSeez3D.AvatarSdk.Cloud
 			return r;
 		}
 
+		protected UnityWebRequest HttpPost(string url, Dictionary<string, string> form)
+		{
+			var r = UnityWebRequest.Post(url, form);
+			r.chunkedTransfer = false;  // chunked transfer causes problems with UWSGI
+			return r;
+		}
 		#endregion
 
 		#region Generic request processing
@@ -218,7 +245,7 @@ namespace ItSeez3D.AvatarSdk.Cloud
 			}
 
 			if (!goodResponse) {
-				Debug.LogError ("Could not send the request");
+				Debug.LogErrorFormat ("Could not send the request, status: {0}, error: {1}", status, error);
 				request.Status = status;
 				request.SetError (error);
 				yield break;
@@ -312,6 +339,14 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		}
 
 		/// <summary>
+		/// Call AwaitWebRequestFunc for string data.
+		/// </summary>
+		public virtual IEnumerator AwaitStringDataAsync(Func<UnityWebRequest> webRequestFactory, AsyncWebRequest<string> request)
+		{
+			yield return AwaitWebRequestFunc(webRequestFactory, request, (r) => r.downloadHandler.text);
+		}
+
+		/// <summary>
 		/// Send HTTP GET request, deserialize response as DataType.
 		/// </summary>
 		/// <returns>Async request object that will contain an instance of DataType on success.</returns>
@@ -356,9 +391,12 @@ namespace ItSeez3D.AvatarSdk.Cloud
 					yield break;
 				}
 
-				Debug.LogFormat ("Successfully loaded page {0}", url);
+				// Debug.LogFormat ("Successfully loaded page {0}", url);
 				var page = pageRequest.Result;
-				items.AddRange (page.content);
+
+				for (int i = 0; i < page.content.Length && items.Count < maxItems; ++i)
+					items.Add (page.content[i]);
+
 				url = page.nextPageUrl;
 			} while (items.Count < maxItems && !string.IsNullOrEmpty (url));
 
@@ -471,19 +509,27 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		}
 
 		/// <summary>
-		/// Obtain token using client credentials.
+		/// Generate HTTP request object to obtain the access token.
 		/// </summary>
-		private AsyncWebRequest<AccessData> AuthorizeClientCredentialsGrantTypeAsync (
-			AccessCredentials credentials
-		)
+		/// <param name="credentials">Auth credentials (id and secret)</param>
+		/// <returns>UnityWebRequest object</returns>
+		public virtual UnityWebRequest GenerateAuthRequest(AccessCredentials credentials)
 		{
-			var request = new AsyncWebRequest<AccessData> (AvatarSdkMgr.Str (Strings.RequestingApiToken));
-			var form = new Dictionary<string,string> () {
+			var form = new Dictionary<string, string>() {
 				{ "grant_type", "client_credentials" },
 				{ "client_id", credentials.clientId },
 				{ "client_secret", credentials.clientSecret },
 			};
-			Func<UnityWebRequest> webRequestFactory = () => UnityWebRequest.Post (GetAuthUrl (), form);
+			return HttpPost(GetAuthUrl(), form);
+		}
+
+		/// <summary>
+		/// Obtain token using client credentials.
+		/// </summary>
+		private AsyncWebRequest<AccessData> AuthorizeClientCredentialsGrantTypeAsync (AccessCredentials credentials)
+		{
+			var request = new AsyncWebRequest<AccessData> (AvatarSdkMgr.Str (Strings.RequestingApiToken));
+			Func<UnityWebRequest> webRequestFactory = () => GenerateAuthRequest(credentials);
 			AvatarSdkMgr.SpawnCoroutine (AwaitJsonWebRequest (webRequestFactory, request));
 			return request;
 		}
@@ -514,7 +560,7 @@ namespace ItSeez3D.AvatarSdk.Cloud
 				{ "client_id", clientId },
 				{ "client_secret", clientSecret },
 			};
-			Func<UnityWebRequest> webRequestFactory = () => UnityWebRequest.Post (GetUrl ("o", "token"), form);
+			Func<UnityWebRequest> webRequestFactory = () => HttpPost (GetUrl ("o", "token"), form);
 			AvatarSdkMgr.SpawnCoroutine (AwaitJsonWebRequest (webRequestFactory, request));
 			return request;
 		}
@@ -530,7 +576,7 @@ namespace ItSeez3D.AvatarSdk.Cloud
 				{ "comment", comment },
 			};
 			Func<UnityWebRequest> webRequestFactory = () => {
-				var webRequest = UnityWebRequest.Post (GetUrl ("players"), form);
+				var webRequest = HttpPost (GetUrl ("players"), form);
 				SetAuthHeaders (webRequest);
 				return webRequest;
 			};
@@ -543,10 +589,12 @@ namespace ItSeez3D.AvatarSdk.Cloud
 #region Creating/awaiting/downloading an avatar
 
 		/// <summary>
-		/// Upload photo and create avatar instance on the server. Calculations will start right away after the
-		/// photo is uploaded.
+		/// Upload photo and create avatar instance on the server. Calculations will start right away after the photo is uploaded.
 		/// </summary>
-		public virtual AsyncWebRequest<AvatarData> CreateAvatarWithPhotoAsync (string name, string description, byte[] photoBytes, bool forcePowerOfTwoTexture = false)
+		public virtual AsyncWebRequest<AvatarData> CreateAvatarWithPhotoAsync (
+			string name, string description, byte[] photoBytes, bool forcePowerOfTwoTexture = false, 
+			PipelineType pipeline = PipelineType.FACE, AvatarResources resources = null
+		)
 		{
 			var request = new AsyncWebRequest<AvatarData> (AvatarSdkMgr.Str (Strings.UploadingPhoto), TrackProgress.UPLOAD);
 
@@ -555,12 +603,20 @@ namespace ItSeez3D.AvatarSdk.Cloud
 			{
 				List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
 				formData.Add(new MultipartFormDataSection("name", name));
-				formData.Add(new MultipartFormDataSection("description", description));
+				if (!string.IsNullOrEmpty(description))
+					formData.Add(new MultipartFormDataSection("description", description));
 				formData.Add(new MultipartFormFileSection("photo", photoBytes, "photo.jpg", "application/octet-stream"));
 				formData.Add(new MultipartFormDataSection("preserve_original_texture", (!forcePowerOfTwoTexture).ToString()));
-				formData.Add(new MultipartFormDataSection("pipeline", "animated_face"));
+				formData.Add(new MultipartFormDataSection("pipeline", pipeline.GetPipelineTypeName()));
+
+				if (resources != null)
+				{
+					formData.Add(new MultipartFormDataSection("pipeline_subtype", pipeline_subtype));
+					formData.Add(new MultipartFormDataSection("resources", CoreTools.GetAvatarCalculationParamsJson(resources)));
+				}
 
 				var webRequest = UnityWebRequest.Post(GetUrl("avatars"), formData);
+				webRequest.chunkedTransfer = false;
 				SetAuthHeaders(webRequest);
 				return webRequest;
 			};
@@ -578,7 +634,14 @@ namespace ItSeez3D.AvatarSdk.Cloud
 				requestBody.WriteTextField ("description", description);
 				requestBody.WriteFileField ("photo", "photo.jpg", photoBytes);
 				requestBody.WriteTextField ("preserve_original_texture", (!forcePowerOfTwoTexture).ToString ());
-				requestBody.WriteTextField ("pipeline", "animated_face");
+				requestBody.WriteTextField ("pipeline", pipeline.GetPipelineTypeName());
+
+				if (resources != null)
+				{
+					requestBody.WriteTextField("pipeline_subtype", pipeline_subtype);
+					requestBody.WriteTextField("resources", CoreTools.GetAvatarCalculationParamsJson(resources));
+				}
+
 				requestBody.WriteFooter ();
 				requestBodyData = requestBody.GetRequestBodyData ();
 
@@ -588,6 +651,7 @@ namespace ItSeez3D.AvatarSdk.Cloud
 					webRequest.SetRequestHeader (
 						"Content-Type", string.Format ("multipart/form-data; boundary=\"{0}\"", requestBody.Boundary)
 					);
+					webRequest.chunkedTransfer = false;
 					SetAuthHeaders (webRequest);
 					return webRequest;
 				};
@@ -630,13 +694,32 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		}
 
 		/// <summary>
+		/// Download thumbnail with the specified resolution.
+		/// </summary>
+		/// <param name="avatar">Avatar data</param>
+		/// <returns></returns>
+		public virtual AsyncWebRequest<byte[]> DownloadAvatarThumbnailBytesAsync (AvatarData avatar, int maxW, int maxH)
+		{
+			var param = new Dictionary<string, string> {
+				{ "max_w", maxW.ToString () },
+				{ "max_h", maxH.ToString () },
+			};
+			var url = UrlWithParams (avatar.thumbnail, param);
+
+			var r = AvatarDataRequestAsync (url);
+			r.State = AvatarSdkMgr.Str (Strings.DownloadingThumbnail);
+			return r;
+		}
+
+		/// <summary>
 		/// Download mesh zip file into memory.
 		/// </summary>
 		/// <param name="levelOfDetails">Level of mesh details. 0 - highest resolution, 7 - lowest resolution</param>
 		/// <returns></returns>
 		public virtual AsyncWebRequest<byte[]> DownloadMeshZipAsync (AvatarData avatar, int levelOfDetails = 0)
 		{
-			var r = AvatarDataRequestAsync (AddParamsToUrl(avatar.mesh, "lod", levelOfDetails.ToString()));
+			var url = UrlWithParams (avatar.mesh, "lod", levelOfDetails.ToString ());
+			var r = AvatarDataRequestAsync (url);
 			r.State = AvatarSdkMgr.Str (Strings.DownloadingHeadMesh);
 			return r;
 		}
@@ -678,6 +761,16 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		{
 			var r = AvatarDataRequestAsync (haircut.texture);
 			r.State = AvatarSdkMgr.Str (Strings.DownloadingHaircutTexture);
+			return r;
+		}
+
+		/// <summary>
+		/// Download haircut preview into memory. 
+		/// </summary>
+		public virtual AsyncWebRequest<byte[]> DownloadHaircutPreviewBytesAsync(AvatarHaircutData haircut)
+		{
+			var r = AvatarDataRequestAsync(haircut.preview);
+			r.State = AvatarSdkMgr.Str(Strings.DownloadingHaircutPreview);
 			return r;
 		}
 
@@ -739,9 +832,11 @@ namespace ItSeez3D.AvatarSdk.Cloud
 		/// <summary>
 		/// Get "maxItems" latest avatars (will loop through the pages).
 		/// </summary>
-		public virtual AsyncRequest<AvatarData[]> GetAvatarsAsync (int maxItems = int.MaxValue)
+		public virtual AsyncRequest<AvatarData[]> GetAvatarsAsync (int maxItems = int.MaxValue, Dictionary<string, string> filters = null)
 		{
-			var r = AvatarJsonArrayRequest<AvatarData> (GetUrl ("avatars"), maxItems);
+			var url = GetUrl ("avatars");
+			url = UrlWithParams (url, filters);
+			var r = AvatarJsonArrayRequest<AvatarData> (url, maxItems);
 			r.State = AvatarSdkMgr.Str (Strings.GettingAvatarList);
 			return r;
 		}
@@ -762,6 +857,7 @@ namespace ItSeez3D.AvatarSdk.Cloud
 
 				Func<UnityWebRequest> webRequestFactory = () => {
 					var webRequest = UnityWebRequest.Post (avatar.url, " ");
+					webRequest.chunkedTransfer = false;
 					webRequest.method = "PATCH";
 					webRequest.uploadHandler = new UploadHandlerRaw (requestBodyData);
 					webRequest.SetRequestHeader (
@@ -794,6 +890,25 @@ namespace ItSeez3D.AvatarSdk.Cloud
 			return request;
 		}
 
+		#endregion
+
+#region Resources
+
+		/// <summary>
+		/// Request to get available resources for the pipeline
+		/// </summary>
+		public virtual AsyncWebRequest<string> GetResourcesAsync(PipelineType pipelineType, AvatarResourcesSubset resourcesSubset)
+		{
+			string subsetStr = "available";
+			if (resourcesSubset == AvatarResourcesSubset.DEFAULT)
+				subsetStr = "default";
+
+			var url = GetUrl("resources", subsetStr, pipelineType.GetPipelineTypeName());
+			url = UrlWithParams(url, "pipeline_subtype", pipeline_subtype);
+			var request = new AsyncWebRequest<string>(Strings.GettingResourcesList);
+			AvatarSdkMgr.SpawnCoroutine(AwaitStringDataAsync(() => HttpGet(url), request));
+			return request;
+		}
 #endregion
 
 #region Higher-level API, composite requests

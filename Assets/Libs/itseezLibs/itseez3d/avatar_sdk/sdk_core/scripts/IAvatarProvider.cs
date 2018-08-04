@@ -26,8 +26,14 @@ namespace ItSeez3D.AvatarSdk.Core
 		/// <summary>
 		/// Initializes avatar and prepares for calculation.
 		/// </summary>
+		/// <param name="photoBytes">Photo bytes (jpg or png encoded).</param>
+		/// <param name="name">Name of the avatar</param>
+		/// <param name="description">Description of the avatar</param>
+		/// <param name="pipeline">Calculation pipeline to use, see PipelineType</param>
+		/// <param name="avatarResources">Resources that will be generated for this avatar</param>
 		/// <returns>Avatar code</returns>
-		AsyncRequest<string> InitializeAvatarAsync(byte[] photoBytes);
+		AsyncRequest<string> InitializeAvatarAsync(byte[] photoBytes, string name, string description, PipelineType pipeline = PipelineType.FACE,
+			AvatarResources avatarResources = null);
 
 		/// <summary>
 		/// Starts and waits while avatar is being calculated.
@@ -56,6 +62,11 @@ namespace ItSeez3D.AvatarSdk.Core
 		AsyncRequest<TexturedMesh> GetHaircutMeshAsync(string avatarCode, string haircutId);
 
 		/// <summary>
+		/// Returns haircut preview image as bytes array
+		/// </summary>
+		AsyncRequest<byte[]> GetHaircutPreviewAsync(string avatarCode, string haircutId);
+
+		/// <summary>
 		/// Returns list of avatars identities created by the current user.
 		/// </summary>
 		AsyncRequest<string[]> GetAllAvatarsAsync(int maxItems);
@@ -64,5 +75,10 @@ namespace ItSeez3D.AvatarSdk.Core
 		/// Deletes avatar.
 		/// </summary>
 		AsyncRequest DeleteAvatarAsync(string avatarCode);
+
+		/// <summary>
+		/// Returns resource manager
+		/// </summary>
+		IResourceManager ResourceManager { get; }
 	}
 }

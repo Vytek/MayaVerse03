@@ -48,8 +48,16 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 		// type of used SDK
 		protected SdkType sdkType;
 
-		// viewer implementation should be created in inherited classes
-		protected IViewerImplementation viewerImplementation = null;
+		// Pipeline that will be used to generate avatar
+		protected static PipelineType pipelineType = PipelineType.FACE;
+
+		// instance of string manager
+		protected IStringManager stringManager = new CustomStringMgr();
+
+		// instance of persistent storage
+		protected IPersistentStorage persistentStorage = new CustomPersistentStorage();
+
+
 
 		#region UI
 
@@ -86,6 +94,10 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 		// button to upload photos from the camera
 		public Button generateFromCameraPhoto;
 
+		// toggles to select pipeline type 
+		public Toggle facePipelineToggle;
+		public Toggle headPipelineToggle;
+
 		#endregion
 
 		#region State
@@ -103,6 +115,8 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 		void Start()
 		{
 			StartCoroutine(Initialize());
+
+			SetPipelineToggleValue(pipelineType);
 
 			if (fileBrowser != null)
 				fileBrowser.fileHandler = CreateNewAvatar;
@@ -178,15 +192,6 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 
 		private class CustomPersistentStorage : DefaultPersistentStorage
 		{
-			/// <summary>
-			/// Store haircuts downloaded from the server in a separate non-default folder.
-			/// </summary>
-			/// <returns>The haircuts directory.</returns>
-			public override string GetHaircutsDirectory()
-			{
-				return EnsureDirectoryExists(Path.Combine(GetDataDirectory(), "haircuts_cloud"));
-			}
-
 			// your implementation...
 		}
 
@@ -201,8 +206,9 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 			if (!AvatarSdkMgr.IsInitialized)
 			{
 				AvatarSdkMgr.Init(
-					stringMgr: new CustomStringMgr(),
-					storage: new CustomPersistentStorage()
+					stringMgr: stringManager,
+					storage: persistentStorage,
+					sdkType: sdkType
 				);
 			}
 
@@ -219,7 +225,7 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 				providerContainerGameObject = new GameObject("AvatarProviderContainer");
 				DontDestroyOnLoad(providerContainerGameObject);
 				AvatarProviderContainer providerContainer = providerContainerGameObject.AddComponent< AvatarProviderContainer>();
-				avatarProvider = CoreTools.CreateAvatarProvider(sdkType);
+				avatarProvider = AvatarSdkMgr.IoCContainer.Create<IAvatarProvider>();
 				providerContainer.avatarProvider = avatarProvider;
 
 				var initializeRequest = InitializeAvatarProviderAsync();
@@ -411,7 +417,15 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 		/// </summary>
 		private IEnumerator CreateNewAvatar(byte[] photoBytes)
 		{
-			var initializeAvatar = avatarProvider.InitializeAvatarAsync(photoBytes);
+			PipelineType pipeline = pipelineType;
+			
+			// Choose default set of resources to generate
+			var resourcesRequest = avatarProvider.ResourceManager.GetResourcesAsync(AvatarResourcesSubset.DEFAULT, pipelineType);
+			yield return resourcesRequest;
+			if (resourcesRequest.IsError)
+				yield break;
+
+			var initializeAvatar = avatarProvider.InitializeAvatarAsync(photoBytes, "name", "description", pipeline, resourcesRequest.Result);
 			yield return Await(initializeAvatar, null);
 
 			string avatarCode = initializeAvatar.Result;
@@ -432,7 +446,7 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 				yield break;
 			}
 
-			var downloadAvatar = avatarProvider.MoveAvatarModelToLocalStorageAsync(avatarCode, true, true);
+			var downloadAvatar = avatarProvider.MoveAvatarModelToLocalStorageAsync(avatarCode, pipeline == PipelineType.FACE, true);
 			yield return Await(downloadAvatar, avatarCode);
 			if (downloadAvatar.IsError)
 			{
@@ -499,8 +513,8 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 			{
 				avatarCode = avatarCode,
 				sceneToReturn = SceneManager.GetActiveScene().name,
-				viewerImplementation = viewerImplementation,
-				avatarProvider = this.avatarProvider
+				avatarProvider = this.avatarProvider,
+				showSettings = true
 			});
 			SceneManager.LoadScene(Scenes.GetSceneName(SceneType.AVATAR_VIEWER));
 		}
@@ -512,7 +526,6 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 		{
 			return loadedAvatars.FirstOrDefault(a => string.Compare(a.code, avatarCode) == 0);
 		}
-
 		#endregion
 
 		#region Edit and delete avatar
@@ -544,6 +557,34 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 		public void OnDeleteAvatar(string avatarCode)
 		{
 			StartCoroutine(DeleteAvatar(avatarCode));
+		}
+
+		#endregion
+
+		#region UI handlers
+
+		public void OnPipelineTypeToggleChanged(bool isChecked)
+		{
+			if (facePipelineToggle.isOn)
+				pipelineType = PipelineType.FACE;
+			else if (headPipelineToggle.isOn)
+				pipelineType = PipelineType.HEAD;
+		}
+
+		protected void SetPipelineToggleValue(PipelineType pipeline)
+		{
+			switch (pipeline)
+			{
+				case PipelineType.FACE:
+					if (facePipelineToggle != null)
+						facePipelineToggle.isOn = true;
+					break;
+
+				case PipelineType.HEAD:
+					if (headPipelineToggle != null)
+						headPipelineToggle.isOn = true;
+					break;
+			}
 		}
 
 		#endregion

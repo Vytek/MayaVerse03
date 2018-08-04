@@ -15,6 +15,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using System.Collections.Generic;
+using SimpleJSON;
 
 namespace ItSeez3D.AvatarSdk.Core
 {
@@ -25,40 +26,8 @@ namespace ItSeez3D.AvatarSdk.Core
 		/// <summary>
 		/// Current version of an SDK. Used for update checks in the editor.
 		/// </summary>
-		public static Version SdkVersion { get { return new Version (1, 4, 0); } }
+		public static Version SdkVersion { get { return new Version (1, 5, 0); } }
 
-		#endregion
-
-		#region AvatarProvider factory
-
-		/// <summary>
-		/// Creates corresponding instance that implements IAvatarProvider for Cloud or Offline SDK
-		/// </summary>
-		public static IAvatarProvider CreateAvatarProvider(SdkType providerType)
-		{
-			Dictionary<SdkType, string> providers = new Dictionary<SdkType, string>()
-			{
-				{ SdkType.Offline, "ItSeez3D.AvatarSdk.Offline.OfflineAvatarProvider" },
-				{ SdkType.Cloud, "ItSeez3D.AvatarSdk.Cloud.CloudAvatarProvider"}
-			};
-
-			if (!providers.ContainsKey(providerType))
-			{
-				Debug.LogErrorFormat("Unknown avatar provider type: {0}", providerType);
-				return null;
-			}
-
-			string avatarProviderClassName = providers[providerType];
-			Assembly assembly = Assembly.GetExecutingAssembly();
-			Type type = assembly.GetType(avatarProviderClassName);
-			if (type == null)
-			{
-				Debug.LogErrorFormat("Unable to create avatar provider! Current version if the SDK doesn't support {0}", avatarProviderClassName);
-				return null;
-			}
-			return (IAvatarProvider)Activator.CreateInstance(type);
-		}
-		
 		#endregion
 
 		#region Save avatar files
@@ -72,6 +41,7 @@ namespace ItSeez3D.AvatarSdk.Core
 		public static AsyncRequest<string> SaveFileAsync (byte[] bytes, string path)
 		{
 			var request = new AsyncRequestThreaded<string> (() => {
+				Directory.CreateDirectory(Path.GetDirectoryName(path));
 				File.WriteAllBytes (path, bytes);
 				return path;
 			});
@@ -101,27 +71,24 @@ namespace ItSeez3D.AvatarSdk.Core
 		}
 
 		/// <summary>
-		/// Same as SaveAvatarFileAsync, but for avatar-specific haircut files. Currently this function is only used
-		/// for haircut points, because they are unique for each avatar and should be stored in avatar folder.
+		/// Same as SaveAvatarFileAsync, but for haircut points, because they are unique for each avatar and should be stored in avatar folder.
 		/// </summary>
 		/// <param name="bytes">Binary file content.</param>
 		/// <param name="code">Avatar unique code.</param>
 		/// <param name="haircutId">Unique ID of a haircut.</param>
-		/// <param name="file">File type (e.g. haircut points .ply).</param>
-		public static AsyncRequest<string> SaveAvatarHaircutFileAsync (
+		public static AsyncRequest<string> SaveAvatarHaircutPointCloudZipFileAsync (
 			byte[] bytes,
 			string code,
-			string haircutId,
-			AvatarFile file
+			string haircutId
 		)
 		{
 			try {
-				var filename = AvatarSdkMgr.Storage ().GetAvatarHaircutFilename (code, haircutId, file);
+				var filename = AvatarSdkMgr.Storage ().GetAvatarHaircutPointCloudZipFilename(code, haircutId);
 				return SaveFileAsync (bytes, filename);
 			} catch (Exception ex) {
 				Debug.LogException (ex);
 				var request = new AsyncRequest<string> ("Saving file");
-				request.SetError (string.Format ("Could not save {0}, reason: {1}", file, ex.Message));
+				request.SetError (string.Format ("Could not save point cloud zip, reason: {0}", ex.Message));
 				return request;
 			}
 		}
@@ -166,6 +133,16 @@ namespace ItSeez3D.AvatarSdk.Core
 		}
 
 		/// <summary>
+		/// Read text file asynchronously
+		/// </summary>
+		public static AsyncRequest<string> ReadFileAsync(string path)
+		{
+			var request = new AsyncRequestThreaded<string>(() => File.ReadAllText(path));
+			AvatarSdkMgr.SpawnCoroutine(request.Await());
+			return request;
+		}
+
+		/// <summary>
 		/// Loads the avatar file asynchronously.
 		/// </summary>
 		/// <param name="code">Avatar unique code.</param>
@@ -184,20 +161,19 @@ namespace ItSeez3D.AvatarSdk.Core
 		}
 
 		/// <summary>
-		/// Loads the avatar-specific haircut file asynchronously. Currently used only for haircut points.
+		/// Loads the avatar haircut points file asynchronously.
 		/// </summary>
 		/// <param name="code">Avatar unique code.</param>
 		/// <param name="haircutId">Unique ID of a haircut.</param>
-		/// <param name="file">File type (e.g. haircut points .ply).</param>
-		public static AsyncRequest<byte[]> LoadAvatarHaircutFileAsync (string code, string haircutId, AvatarFile file)
+		public static AsyncRequest<byte[]> LoadAvatarHaircutPointcloudFileAsync (string code, string haircutId)
 		{
 			try {
-				var filename = AvatarSdkMgr.Storage ().GetAvatarHaircutFilename (code, haircutId, file);
+				var filename = AvatarSdkMgr.Storage ().GetAvatarHaircutPointCloudFilename(code, haircutId);
 				return LoadFileAsync (filename);
 			} catch (Exception ex) {
 				Debug.LogException (ex);
 				var request = new AsyncRequest<byte[]> ();
-				request.SetError (string.Format ("Could not load {0}, reason: {1}", file, ex.Message));
+				request.SetError (string.Format ("Could not load haircut {0} point cloud, reason: {1}", haircutId, ex.Message));
 				return request;
 			}
 		}
@@ -230,10 +206,12 @@ namespace ItSeez3D.AvatarSdk.Core
 			if (request.IsError)
 				yield break;
 
+			var parsePlyTimer = new MeasureTime ("Parse ply");
 			var parsePlyRequest = PlyToMeshDataAsync (meshBytesRequest.Result);
 			yield return request.AwaitSubrequest (parsePlyRequest, finalProgress: 1);
 			if (request.IsError)
 				yield break;
+			parsePlyTimer.Stop ();
 
 			request.Result = parsePlyRequest.Result;
 			request.IsDone = true;
@@ -261,10 +239,10 @@ namespace ItSeez3D.AvatarSdk.Core
 				detailsLevel = 0;
 			}
 
-			if (detailsLevel > 3)
+			if (detailsLevel > 4)
 			{
 				Debug.LogWarningFormat("Invalid details level parameter: {0}. Will be used value 3 (lowest resolution).", detailsLevel);
-				detailsLevel = 3;
+				detailsLevel = 4;
 			}
 
 			if (detailsLevel == 0)
@@ -327,19 +305,27 @@ namespace ItSeez3D.AvatarSdk.Core
 
 			MeshData meshData = meshDataRequest.Result;
 
+			var parseTextureTimer = new MeasureTime ("Parse texture data");
 			// at this point we have all data we need to generate a textured mesh
-			var texturedMesh = new TexturedMesh ();
-			texturedMesh.mesh = CreateMeshFromMeshData (meshData, "HeadMesh");
-			texturedMesh.texture = new Texture2D (0, 0);
+			var texturedMesh = new TexturedMesh {
+				mesh = CreateMeshFromMeshData (meshData, "HeadMesh"),
+				texture = new Texture2D (0, 0)
+			};
+
+			// This actually blocks the main thread for a few frames, which is bad for VR.
+			// To optimize: load jpg/png texture in C++ code in a separate thread and only SetPixels here in Unity. Should be faster.
 			texturedMesh.texture.LoadImage (textureBytesRequest.Result);
+			parseTextureTimer.Stop ();
 
 			if (withBlendshapes)
 			{
 				// adding blendshapes...
-				var addBlendshapesRequest = AddBlendshapesAsync(avatarId, texturedMesh.mesh, meshData.indexMap);
-				yield return request.AwaitSubrequest(addBlendshapesRequest, 1.0f);
-				if (addBlendshapesRequest.IsError)
-					Debug.LogError("Could not add blendshapes!");
+				using (new MeasureTime ("Add blendshapes")) {
+					var addBlendshapesRequest = AddBlendshapesAsync (avatarId, texturedMesh.mesh, meshData.indexMap);
+					yield return request.AwaitSubrequest (addBlendshapesRequest, 1.0f);
+					if (addBlendshapesRequest.IsError)
+						Debug.LogError ("Could not add blendshapes!");
+				}
 			}
 
 			request.Result = texturedMesh;
@@ -369,9 +355,9 @@ namespace ItSeez3D.AvatarSdk.Core
 			var loadingTime = Time.realtimeSinceStartup;
 
 			// start three async request in parallel
-			var haircutTexture = LoadHaircutFileAsync (haircutId, HaircutFile.HAIRCUT_TEXTURE);
-			var haircutMesh = LoadHaircutFileAsync (haircutId, HaircutFile.HAIRCUT_MESH_PLY);
-			var haircutPoints = LoadAvatarHaircutFileAsync (avatarCode, haircutId, AvatarFile.HAIRCUT_POINT_CLOUD_PLY);
+			var haircutTexture = LoadHaircutFileAsync(haircutId, HaircutFile.HAIRCUT_TEXTURE);
+			var haircutMesh = LoadHaircutFileAsync(haircutId, HaircutFile.HAIRCUT_MESH_PLY);
+			var haircutPoints = LoadAvatarHaircutPointcloudFileAsync(avatarCode, haircutId);
 
 			// wait until mesh and points load
 			yield return request.AwaitSubrequests (0.4f, haircutMesh, haircutPoints);
@@ -570,13 +556,17 @@ namespace ItSeez3D.AvatarSdk.Core
 		/// </summary>
 		private static IEnumerator AddBlendshapes (string avatarId, Mesh mesh, int[] indexMap, AsyncRequest<Mesh> request)
 		{
-			var blendshapesDir = AvatarSdkMgr.Storage ().GetAvatarSubdirectory (avatarId, AvatarSubdirectory.BLENDSHAPES);
+			var blendshapesDirs = AvatarSdkMgr.Storage ().GetAvatarBlendshapesDirs(avatarId);
 
 			var loadBlendshapesRequest = new AsyncRequestThreaded<Dictionary<string, Vector3[]>> ((r) => {
+				var timer = new MeasureTime ("Read all blendshapes");
 				var blendshapes = new Dictionary<string, Vector3[]> ();
-				var blendshapeFiles = Directory.GetFiles (blendshapesDir);
+				List<string> blendshapeFiles = new List<string>();
+				foreach (string dir in blendshapesDirs)
+					blendshapeFiles.AddRange(Directory.GetFiles(dir));
+				var blendshapeReader = new BlendshapeReader (indexMap);
 
-				for (int i = 0; i < blendshapeFiles.Length; ++i) {
+				for (int i = 0; i < blendshapeFiles.Count; ++i) {
 					var blendshapePath = blendshapeFiles [i];
 					var filename = Path.GetFileName (blendshapePath);
 
@@ -588,10 +578,11 @@ namespace ItSeez3D.AvatarSdk.Core
 						continue;
 
 					var blendshapeName = tokens [0];
-					blendshapes [blendshapeName] = BlendshapeReader.ReadVerticesDeltas (blendshapePath, indexMap);
-					r.Progress = (float)i / blendshapeFiles.Length;
+					blendshapes [blendshapeName] = blendshapeReader.ReadVerticesDeltas (blendshapePath);
+					r.Progress = (float)i / blendshapeFiles.Count;
 				}
 
+				timer.Stop ();
 				return blendshapes;
 			}, AvatarSdkMgr.Str (Strings.ParsingBlendshapes));
 
@@ -599,9 +590,23 @@ namespace ItSeez3D.AvatarSdk.Core
 			if (request.IsError)
 				yield break;
 
+			var addBlendshapesTimer = DateTime.Now;
+			float targetFps = 30.0f;
+
+			int numBlendshapes = 0, loadedSinceLastPause = 0;
 			var blendshapesDict = loadBlendshapesRequest.Result;
-			foreach (var blendshape in blendshapesDict)
+			foreach (var blendshape in blendshapesDict) {
 				mesh.AddBlendShapeFrame (blendshape.Key, 100.0f, blendshape.Value, null, null);
+				++numBlendshapes;
+				++loadedSinceLastPause;
+
+				if ((DateTime.Now - addBlendshapesTimer).TotalMilliseconds > 1000.0f / targetFps && loadedSinceLastPause >= 5) {
+					// Debug.LogFormat ("Pause after {0} blendshapes to avoid blocking the main thread", numBlendshapes);
+					yield return null;
+					addBlendshapesTimer = DateTime.Now;
+					loadedSinceLastPause = 0;
+				}
+			}
 
 			request.Result = mesh;
 			request.IsDone = true;
@@ -735,6 +740,208 @@ namespace ItSeez3D.AvatarSdk.Core
 			errorMessage = string.Empty;
 			return true;
 		}
+		#endregion
+
+		#region Avatar calculation params
+		/// <summary>
+		/// Prepares JSON with parameters required for avatar calculation.
+		/// </summary>
+		public static string GetAvatarCalculationParamsJson(AvatarResources avatarResources)
+		{
+			JSONObject resourcesJson = new JSONObject();
+
+			if (avatarResources != null)
+			{
+				if (!IsListNullOrEmpty(avatarResources.blendshapes))
+					resourcesJson["blendshapes"] = ListToJsonNode(avatarResources.blendshapes);
+
+				if (!IsListNullOrEmpty(avatarResources.haircuts))
+					resourcesJson["haircuts"] = ListToJsonNode(avatarResources.haircuts);
+			}
+
+			return resourcesJson.ToString(4);
+		}
+
+		/// <summary>
+		/// Converts list with resources to JSONNode
+		/// </summary>
+		private static JSONNode ListToJsonNode(List<string> list)
+		{
+			Dictionary<string, JSONArray> groups = new Dictionary<string, JSONArray>();
+
+			foreach(string item in list)
+			{
+				string[] subItems = item.Split(new char[] { '\\', '/' });
+				if (subItems.Length == 2)
+				{
+					if (!groups.ContainsKey(subItems[0]))
+						groups.Add(subItems[0], new JSONArray());
+					groups[subItems[0]][""] = subItems[1];
+				}
+				else
+					Debug.LogErrorFormat("Invalid resource name: {0}", item);
+			}
+
+			JSONObject baseNode = new JSONObject();
+			foreach(var group in groups)
+			{
+				baseNode[group.Key] = group.Value;
+			}
+
+			return baseNode;
+		}
+
+		/// <summary>
+		/// Checks if list is null or empty
+		/// </summary>
+		private static bool IsListNullOrEmpty(List<string> list)
+		{
+			return list == null || list.Count == 0;
+		}
+		#endregion
+
+		#region haircuts naming
+		/// <summary>
+		/// Since SDK version 1.5.0 all haircuts ids have new format.
+		/// To provide backward compatibility for avatars created by previous version of SDK, we need to distinguish them.
+		/// This method allows to check if the haircut id is from the previos version or not.
+		/// </summary>
+		public static bool IsHaircutIdInOldFormat(string haircutId)
+		{
+			return haircutId.LastIndexOfAny(new char[] { '\\', '/' }) == -1;
+		}
+
+		/// <summary>
+		/// Converts haircut id to new format if it is required
+		/// </summary>
+		public static string ConvertHaircutIdToNewFormat(string haircutId)
+		{
+			if (IsHaircutIdInOldFormat(haircutId))
+				return string.Format("base/{0}", haircutId);
+
+			return haircutId;
+		}
+		#endregion
+
+		#region Export functionality
+
+		/// <summary>
+		/// Converts avatar mesh from ply to obj format
+		/// </summary>
+		public static void AvatarPlyToObj(string avatarId, AvatarFile avatarMesh, AvatarFile avatarTexture, string objFile)
+		{
+			var plyFile = AvatarSdkMgr.Storage().GetAvatarFilename(avatarId, avatarMesh);
+			var srcTextureFile = AvatarSdkMgr.Storage().GetAvatarFilename(avatarId, avatarTexture);
+			var dstTextureFile = Path.Combine(Path.GetDirectoryName(objFile), Path.GetFileNameWithoutExtension(objFile) + ".jpg");
+
+			var returnCode = CreateMeshConverter().ConvertPlyModelToObj(plyFile, null, objFile, dstTextureFile);
+			if (returnCode != 0)
+			{
+				Debug.LogErrorFormat("Unable convert avatar to obj. Error code: {0}", returnCode);
+				return;
+			}
+
+			if (File.Exists(dstTextureFile))
+				File.Delete(dstTextureFile);
+			File.Copy(srcTextureFile, dstTextureFile);
+		}
+
+		/// <summary>
+		/// Converts current haircut mesh from ply to obj format and saves recolored texture.
+		/// </summary>
+		public static void HaircutPlyToObj(string avatarId, string haircutId, string objFile, Color color, Vector4 tint)
+		{
+			var filenames = AvatarSdkMgr.Storage();
+			var pointCloudPlyFile = filenames.GetAvatarHaircutPointCloudFilename(avatarId, haircutId);
+			var haircutPlyFile = filenames.GetHaircutFilename(haircutId, HaircutFile.HAIRCUT_MESH_PLY);
+			var srcHaircutTextureFile = filenames.GetHaircutFilename(haircutId, HaircutFile.HAIRCUT_TEXTURE);
+			var dstHaircutTextureFile = Path.Combine(Path.GetDirectoryName(objFile), Path.GetFileNameWithoutExtension(objFile) + ".png");
+
+			var returnCode = CreateMeshConverter().ConvertPlyModelToObj(pointCloudPlyFile, haircutPlyFile, objFile, dstHaircutTextureFile);
+			if (returnCode != 0)
+			{
+				Debug.LogErrorFormat("Unable convert haircut to obj. Error code: {0}", returnCode);
+				return;
+			}
+
+			RecolorAndSaveTexture(srcHaircutTextureFile, dstHaircutTextureFile, color, tint);
+		}
+
+		public static void ExportAvatarAsFbx(string avatarId, string fbxFile)
+		{
+			var plyFile = AvatarSdkMgr.Storage().GetAvatarFilename(avatarId, AvatarFile.MESH_PLY);
+			var blendshapeDir = AvatarSdkMgr.Storage().GetAvatarSubdirectory(avatarId, AvatarSubdirectory.BLENDSHAPES);
+
+			// copy texture to destination dir
+			var srcTextureFile = AvatarSdkMgr.Storage().GetAvatarFilename(avatarId, AvatarFile.TEXTURE);
+			var dstTextureFile = Path.Combine(Path.GetDirectoryName(fbxFile), Path.GetFileNameWithoutExtension(fbxFile) + ".jpg");
+			if (File.Exists(dstTextureFile))
+				File.Delete(dstTextureFile);
+			File.Copy(srcTextureFile, dstTextureFile);
+
+			var returnCode = CreateMeshConverter().ExportFbxWithBlendshapes(plyFile, dstTextureFile, blendshapeDir, fbxFile);
+			if (returnCode != 0)
+				Debug.LogErrorFormat("Unable export avatar to fbx. Error code: {0}", returnCode);
+		}
+
+		/// <summary>
+		/// Converts current haircut mesh from ply to fbx format and saves recolored texture.
+		/// </summary>
+		public static void HaircutPlyToFbx(string avatarId, string haircutId, string fbxFile, Color color, Vector4 tint)
+		{
+			var filenames = AvatarSdkMgr.Storage();
+			var pointCloudPlyFile = filenames.GetAvatarHaircutPointCloudFilename(avatarId, haircutId);
+			var haircutPlyFile = filenames.GetHaircutFilename(haircutId, HaircutFile.HAIRCUT_MESH_PLY);
+			var srcHaircutTextureFile = filenames.GetHaircutFilename(haircutId, HaircutFile.HAIRCUT_TEXTURE);
+			var dstHaircutTextureFile = Path.Combine(Path.GetDirectoryName(fbxFile), Path.GetFileNameWithoutExtension(fbxFile) + ".png");
+
+			var returnCode = CreateMeshConverter().СonvertPlyModelToFbx(pointCloudPlyFile, haircutPlyFile, fbxFile, dstHaircutTextureFile);
+			if (returnCode != 0)
+			{
+				Debug.LogErrorFormat("Unable export haircut to fbx. Error code: {0}", returnCode);
+				return;
+			}
+
+			RecolorAndSaveTexture(srcHaircutTextureFile, dstHaircutTextureFile, color, tint);
+		}
+
+		/// <summary>
+		/// Saves recolored haircut texture.
+		/// </summary>
+		private static void RecolorAndSaveTexture(string srcTextureFile, string dstTextureFile, Color color, Vector4 tint)
+		{
+			byte[] bytes = File.ReadAllBytes(srcTextureFile);
+			Texture2D texture = new Texture2D(2, 2);
+			texture.LoadImage(bytes);
+			Color[] pixels = texture.GetPixels();
+			float threshold = 0.2f, tintCoeff = 0.8f;  // should be the same as in the shader
+			for (int i = 0; i < pixels.Length; ++i)
+			{
+				Color tinted = pixels[i] + tintCoeff * new Color(tint.x, tint.y, tint.z);
+				float maxTargetChannel = Math.Max(color.r, Math.Max(color.g, color.b));
+				if (maxTargetChannel < threshold)
+				{
+					float darkeningCoeff = Math.Min(0.85f, (threshold - maxTargetChannel) / threshold);
+					tinted = (1.0f - darkeningCoeff) * tinted + darkeningCoeff * (color * pixels[i]);
+				}
+				pixels[i].r = tinted.r;
+				pixels[i].g = tinted.g;
+				pixels[i].b = tinted.b;
+			}
+			texture.SetPixels(pixels);
+
+			bytes = texture.EncodeToPNG();
+			File.WriteAllBytes(dstTextureFile, bytes);
+		}
+
+		private static IMeshConverter CreateMeshConverter()
+		{
+			IMeshConverter meshConverter = AvatarSdkMgr.IoCContainer.Create<IMeshConverter>();
+			if (meshConverter == null)
+				Debug.LogError("Unable to create mesh converter");
+			return meshConverter;
+		}
+
 		#endregion
 	}
 }

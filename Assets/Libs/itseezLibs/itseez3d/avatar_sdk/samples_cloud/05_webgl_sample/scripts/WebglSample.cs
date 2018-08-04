@@ -30,12 +30,8 @@ namespace ItSeez3D.AvatarSdkSamples.Cloud
 	{
 		// avatar image is being uploaded to the server
 		UPLOADING,
-		// avatar has just been created
-		CREATED,
 		// avatar is being calculated on the server (all server states like Queued and Computing go here)
 		CALCULATING_IN_CLOUD,
-		// avatar is calculated, but the results are not yet downloaded
-		CALCULATED,
 		// downloading results from server, avatar should be in "Completed" state on the server
 		DOWNLOADING,
 		// finished downloading the results, avatar is ready to be displayed in the scene
@@ -66,7 +62,7 @@ namespace ItSeez3D.AvatarSdkSamples.Cloud
 		private static CloudAvatarProvider avatarProvider = null;
 		private static AvatarData createdAvatar = null;
 		private static WebglAvatarState avatarState;
-		private static int countOpenedModels = 0;
+		private static AsyncRequest<AvatarData> faceAvatarRequest = null;
 
 #if UNITY_WEBGL
 		private readonly string urlProxy = "https://accounts.avatarsdk.com/imgp/";
@@ -75,82 +71,76 @@ namespace ItSeez3D.AvatarSdkSamples.Cloud
 		private static extern void showPrompt(string message, string objectName, string callbackFuncName);
 #endif
 
-		void Start ()
+		void Start()
 		{
 #if !UNITY_EDITOR
-	#if UNITY_WEBGL
+#if UNITY_WEBGL
 			urlInput.gameObject.SetActive(false);
 			urlButton.gameObject.SetActive(true);
 			HorizontalLayoutGroup browsePanelLayout = browsePanel.GetComponentInChildren<HorizontalLayoutGroup>();
 			browsePanelLayout.childControlWidth = true;
-	#else
+#else
 			browsePanel.SetActive(false);
-	#endif
+#endif
 #endif
 
 			fileBrowser.fileHandler = HandleUploadedImage;
-			StartCoroutine (Initialize ());
+			StartCoroutine(Initialize());
 		}
 
-		public void OnEnterURLEnded (string value)
+		public void OnEnterURLEnded(string value)
 		{
-			Debug.LogFormat ("Entered: {0}", value);
-			if (string.IsNullOrEmpty (value))
+			Debug.LogFormat("Entered: {0}", value);
+			if (string.IsNullOrEmpty(value))
 				return;
 
-			StartCoroutine (UploadImageByUrl (value));
+			StartCoroutine(UploadImageByUrl(value));
 		}
 
-		public void OnUploadButtonClick ()
+		public void OnUploadButtonClick()
 		{
-			StartCoroutine (CreateNewAvatar ());
+			StartCoroutine(CreateNewAvatar());
 		}
 
-		public void OnShowButtonClick ()
+		public void OnShowButtonClick()
 		{
-			countOpenedModels++;
-			AvatarViewer.SetSceneParams (new AvatarViewer.SceneParams () {
+			AvatarViewer.SetSceneParams(new AvatarViewer.SceneParams()
+			{
 				avatarCode = createdAvatar.code,
-				withPlane = true,
-				sceneToReturn = SceneManager.GetActiveScene ().name,
-				viewerImplementation = new CloudViewerImplementation (),
-				avatarProvider = WebglSample.avatarProvider
+				showSettings = false,
+				sceneToReturn = SceneManager.GetActiveScene().name,
+				avatarProvider = WebglSample.avatarProvider,
+				faceAvatarRequest = faceAvatarRequest
 			});
-			SceneManager.LoadScene (Scenes.GetSceneName (SceneType.AVATAR_VIEWER));
+			SceneManager.LoadScene(Scenes.GetSceneName(SceneType.AVATAR_VIEWER));
 		}
 
-		public void OnEnterUrlClick ()
+		public void OnEnterUrlClick()
 		{
 #if UNITY_WEBGL
 			showPrompt("Enter url", gameObject.name, "OnEnterURLEnded");
 #endif
 		}
 
-		public void OnFeedbackClick()
-		{
-			Application.OpenURL("https://www.surveygizmo.com/s3/4059763/Avatar-SDK-WebGL-demo");
-			// To open in new tab. In this case popup window may be blocked.
-			//Application.ExternalEval("window.open(\"http://www.surveygizmo.com/s3/4059763/Avatar-SDK-WebGL-demo\",\"_blank\")");
-		}
-
-		private IEnumerator Initialize ()
+		private IEnumerator Initialize()
 		{
 			if (!AvatarSdkMgr.IsInitialized)
-				AvatarSdkMgr.Init (stringMgr: new DefaultStringManager (), storage: new DefaultPersistentStorage ());
+				AvatarSdkMgr.Init(stringMgr: new DefaultStringManager(), storage: new DefaultPersistentStorage(), sdkType: SdkType.Cloud);
 
 			if (avatarProvider == null)
 				avatarProvider = new CloudAvatarProvider();
 			connection = avatarProvider.Connection;
 
-			var imageItems = sampleImagesPanel.GetComponentsInChildren<ImageItem> ();
+			var imageItems = sampleImagesPanel.GetComponentsInChildren<ImageItem>();
 			foreach (ImageItem item in imageItems)
 				item.imageSelectedHandler = HandleSelectedImage;
 
-			if (createdAvatar != null) {
-				UpdateSelectedImage (selectedImageBytes);
-				UpdateAvatarState (avatarState);
+			if (createdAvatar != null)
+			{
+				UpdateSelectedImage(selectedImageBytes);
+				UpdateAvatarState(avatarState, PipelineType.HEAD);
 			}
-			image.gameObject.SetActive (true);
+			image.gameObject.SetActive(true);
 
 			// initialize provider
 			if (!avatarProvider.Connection.IsAuthorized)
@@ -162,21 +152,19 @@ namespace ItSeez3D.AvatarSdkSamples.Cloud
 					yield break;
 				}
 			}
-			//if (countOpenedModels >= 3)
-			//	feedbackButton.gameObject.SetActive(true);
 		}
 
-		private void UpdateSelectedImage (byte[] bytes)
+		private void UpdateSelectedImage(byte[] bytes)
 		{
-			ResetControlsToDefaultState ();
+			ResetControlsToDefaultState();
 
 			selectedImageBytes = bytes;
 
-			Texture2D jpgTexture = new Texture2D (1, 1);
-			jpgTexture.LoadImage (selectedImageBytes);
+			Texture2D jpgTexture = new Texture2D(1, 1);
+			jpgTexture.LoadImage(selectedImageBytes);
 
-			Texture2D previewTexture = SampleUtils.RescaleTexture (jpgTexture, 300);
-			Destroy (jpgTexture);
+			Texture2D previewTexture = SampleUtils.RescaleTexture(jpgTexture, 300);
+			Destroy(jpgTexture);
 			jpgTexture = null;
 
 			var color = image.color;
@@ -184,24 +172,32 @@ namespace ItSeez3D.AvatarSdkSamples.Cloud
 			image.color = color;
 
 			image.preserveAspect = true;
-			image.overrideSprite = Sprite.Create (previewTexture, new Rect (0, 0, previewTexture.width, previewTexture.height), Vector2.zero);
+			image.overrideSprite = Sprite.Create(previewTexture, new Rect(0, 0, previewTexture.width, previewTexture.height), Vector2.zero);
 		}
 
-		private void HandleSelectedImage (byte[] imageBytes)
+		private void HandleSelectedImage(byte[] imageBytes)
 		{
 			if (controlsEnabled)
-				UpdateSelectedImage (imageBytes);
+				UpdateSelectedImage(imageBytes);
 		}
 
-		private IEnumerator HandleUploadedImage (byte[] imageBytes)
+		private IEnumerator HandleUploadedImage(byte[] imageBytes)
 		{
-			UpdateSelectedImage (imageBytes);
-			yield return new WaitForEndOfFrame ();
+			UpdateSelectedImage(imageBytes);
+			yield return new WaitForEndOfFrame();
 		}
 
-		private IEnumerator UploadImageByUrl (string url)
+		private IEnumerator UploadImageByUrl(string url)
 		{
-			ChangeControlsState (false);
+			if (!Uri.IsWellFormedUriString(url, UriKind.Absolute))
+			{
+				string msg = "Invalid URL";
+				Debug.LogError(msg);
+				ShowImageUploadingStatus(msg);
+				yield break;
+			}
+
+			ChangeControlsState(false);
 
 #if !UNITY_EDITOR && UNITY_WEBGL
 			// In webgl we need to use proxy due to security restrictions
@@ -213,17 +209,18 @@ namespace ItSeez3D.AvatarSdkSamples.Cloud
 			UnityWebRequest webRequest = UnityWebRequestTexture.GetTexture(url);
 			webRequest.SendWebRequest();
 #else
-			UnityWebRequest webRequest = UnityWebRequestTexture.GetTexture (url);
+			UnityWebRequest webRequest = UnityWebRequest.GetTexture (url);
 			webRequest.Send();
 #endif
 
-			do {
+			do
+			{
 				yield return null;
 				string statusMessage = string.Format("Downloading image: {0}%", (webRequest.downloadProgress * 100).ToString("0.0"));
 				ShowImageUploadingStatus(statusMessage);
 			} while (!webRequest.isDone);
 
-			ChangeControlsState (true);
+			ChangeControlsState(true);
 			urlInput.text = string.Empty;
 
 #if UNITY_2017_1_OR_NEWER
@@ -232,135 +229,153 @@ namespace ItSeez3D.AvatarSdkSamples.Cloud
 			if (webRequest.isError)
 #endif
 			{
-				Debug.LogErrorFormat ("Unable to upload image: {0}, Code: {1}!", webRequest.error, webRequest.responseCode);
-				ShowImageUploadingStatus ("Unable to get image by URL!");
+				Debug.LogErrorFormat("Unable to upload image: {0}, Code: {1}!", webRequest.error, webRequest.responseCode);
+				ShowImageUploadingStatus("Unable to get image by URL!");
 				yield break;
 			}
 
 			// www.texture contains red question-mark (8x8) if no image was loaded
 			// we need do detect such case and handle it as error 
 			DownloadHandlerTexture texturehandler = ((DownloadHandlerTexture)webRequest.downloadHandler);
-			if (texturehandler.texture == null || (texturehandler.texture.width == 8 && texturehandler.texture.height == 8)) {
-				Debug.LogErrorFormat ("Unable to upload image2: {0}, Code: {1}!", webRequest.error, webRequest.responseCode);
-				ShowImageUploadingStatus ("Unable to get image by URL!");
+			if (texturehandler.texture == null || (texturehandler.texture.width == 8 && texturehandler.texture.height == 8))
+			{
+				Debug.LogErrorFormat("Unable to upload image2: {0}, Code: {1}!", webRequest.error, webRequest.responseCode);
+				ShowImageUploadingStatus("Unable to get image by URL!");
 				yield break;
 			}
 
 			HideImageUploadingStatus();
-			UpdateSelectedImage (webRequest.downloadHandler.data);
+			UpdateSelectedImage(webRequest.downloadHandler.data);
 		}
 
-		private IEnumerator CreateNewAvatar ()
+		private IEnumerator CreateNewAvatar()
 		{
-			ChangeControlsState (false);
-			UpdateAvatarState (WebglAvatarState.UPLOADING);
+			ChangeControlsState(false);
 			createdAvatar = null;
 
-			var createAvatar = connection.CreateAvatarWithPhotoAsync ("test_avatar", "test_description", selectedImageBytes);
-			yield return Await (createAvatar);
-			if (createAvatar.IsError) {
-				Debug.LogError ("Could not create avatar!");
-				UpdateAvatarState (WebglAvatarState.FAILED);
-				ChangeControlsState (true);
+			// Face avatar is being calculated in background
+			faceAvatarRequest = GenerateAvatarAsync(selectedImageBytes, PipelineType.FACE);
+			var headAvatarRequest = GenerateAvatarAsync(selectedImageBytes, PipelineType.HEAD);
+
+			yield return headAvatarRequest;
+
+			ChangeControlsState(true);
+
+			if (!headAvatarRequest.IsError && avatarState == WebglAvatarState.FINISHED)
+			{
+				createdAvatar = headAvatarRequest.Result;
+				OnShowButtonClick();
+			}
+		}
+
+		private AsyncRequest<AvatarData> GenerateAvatarAsync(byte[] selectedImageBytes, PipelineType pipelineType)
+		{
+			var request = new AsyncRequest<AvatarData>();
+			AvatarSdkMgr.SpawnCoroutine(GenerateAvatarFunc(selectedImageBytes, pipelineType, request));
+			return request;
+		}
+
+		private AsyncRequest DownloadAvatarAsync(AvatarData avatar, PipelineType pipelineType)
+		{
+			var request = new AsyncRequest();
+			AvatarSdkMgr.SpawnCoroutine(DownloadAvatarFunc(avatar, pipelineType, request));
+			return request;
+		}
+
+		private IEnumerator GenerateAvatarFunc(byte[] selectedImageBytes, PipelineType pipelineType, AsyncRequest<AvatarData> request)
+		{
+			UpdateAvatarState(WebglAvatarState.UPLOADING, pipelineType);
+
+			var defaultResourcesRequest = avatarProvider.ResourceManager.GetResourcesAsync(AvatarResourcesSubset.DEFAULT, pipelineType);
+			yield return Await(defaultResourcesRequest, pipelineType);
+
+			// Generate all haircuts and default blendshapes to play animations
+			var allResourcesRequest = avatarProvider.ResourceManager.GetResourcesAsync(AvatarResourcesSubset.ALL, pipelineType);
+			yield return Await(allResourcesRequest, pipelineType);
+			if (defaultResourcesRequest.IsError || allResourcesRequest.IsError)
+			{
+				string msg = "Unable to get resources list";
+				Debug.LogError(msg);
+				UpdateAvatarState(WebglAvatarState.FAILED, pipelineType);
+				request.SetError(msg);
+				yield break;
+			}
+			AvatarResources resources = allResourcesRequest.Result;
+			resources.blendshapes = defaultResourcesRequest.Result.blendshapes;
+
+			var createAvatar = connection.CreateAvatarWithPhotoAsync("test_avatar", "test_description", selectedImageBytes, false, pipelineType, resources);
+			yield return Await(createAvatar, pipelineType);
+			if (createAvatar.IsError)
+			{
+				Debug.LogError(createAvatar.ErrorMessage);
+				UpdateAvatarState(WebglAvatarState.FAILED, pipelineType);
+				request.SetError(createAvatar.ErrorMessage);
 				yield break;
 			}
 
 			var avatar = createAvatar.Result;
-			var savePhoto = CoreTools.SaveAvatarFileAsync (selectedImageBytes, avatar.code, AvatarFile.PHOTO);
+			var savePhoto = CoreTools.SaveAvatarFileAsync(selectedImageBytes, avatar.code, AvatarFile.PHOTO);
 			yield return savePhoto;
 
-			if (savePhoto.IsError) {
-				Debug.LogError ("Could not save avatar photo!");
-				ChangeControlsState (true);
+			var savePipeline = CoreTools.SaveAvatarFileAsync(Encoding.ASCII.GetBytes(pipelineType.GetPipelineTypeName()), avatar.code, AvatarFile.PIPELINE_INFO);
+			yield return savePipeline;
+
+			if (savePhoto.IsError)
+			{
+				Debug.LogError(savePhoto.ErrorMessage);
+				UpdateAvatarState(WebglAvatarState.FAILED, pipelineType);
+				request.SetError(savePhoto.ErrorMessage);
 				yield break;
 			}
 
-			UpdateAvatarState (WebglAvatarState.CREATED);
-			yield return AwaitAvatarCalculation (avatar);
-			if (avatarState == WebglAvatarState.CALCULATED)
-				yield return DownloadAvatar (avatar);
-			ChangeControlsState (true);
-		}
+			UpdateAvatarState(WebglAvatarState.CALCULATING_IN_CLOUD, pipelineType);
 
-		private static string StatePretty(WebglAvatarState state)
-		{
-			switch (state) {
-			case WebglAvatarState.CREATED:
-				return "initialization is finished";
-			case WebglAvatarState.UPLOADING:
-				return "uploading photo to the server";
-			case WebglAvatarState.CALCULATING_IN_CLOUD:
-				return "deep learning inference";
-			case WebglAvatarState.CALCULATED:
-				return "calculations finished";
-			case WebglAvatarState.DOWNLOADING:
-				return "downloading avatar files";
-			case WebglAvatarState.FINISHED:
-				return "done";
-			case WebglAvatarState.FAILED:
-				return "calculations failed, please try a different photo";
+			var awaitCalculations = connection.AwaitAvatarCalculationsAsync(avatar);
+			yield return Await(awaitCalculations, pipelineType);
+
+			if (awaitCalculations.IsError)
+			{
+				Debug.LogError(awaitCalculations.ErrorMessage);
+				UpdateAvatarState(WebglAvatarState.FAILED, pipelineType);
+				request.SetError(awaitCalculations.ErrorMessage);
+				yield break;
 			}
 
-			return "unknown state";
-		}
+			AvatarData avatarData = awaitCalculations.Result;
+			UpdateAvatarState(WebglAvatarState.DOWNLOADING, pipelineType);
+			var downloadRequest = DownloadAvatarAsync(avatarData, pipelineType);
+			yield return downloadRequest;
 
-		private void UpdateAvatarState (WebglAvatarState state)
-		{
-			avatarState = state;
-			statusText.text = string.Format ("State: {0}", StatePretty(state));
-
-			uploadButton.gameObject.SetActive (false);
-			showButton.gameObject.SetActive (false);
-			statusText.gameObject.SetActive (true);
-			progressText.gameObject.SetActive (true);
-
-			if (state == WebglAvatarState.FAILED)
-				return;
-
-			switch (state) {
-			case WebglAvatarState.FINISHED:
-			case WebglAvatarState.CREATED:
-			case WebglAvatarState.CALCULATED:
-				showButton.gameObject.SetActive (true);
-				statusText.gameObject.SetActive (false);
-				progressText.gameObject.SetActive (false);
-				break;
-			default:
-				break;
+			if (downloadRequest.IsError)
+			{
+				Debug.LogError(downloadRequest.ErrorMessage);
+				UpdateAvatarState(WebglAvatarState.FAILED, pipelineType);
+				request.SetError(downloadRequest.ErrorMessage);
+				yield break;
 			}
+
+			UpdateAvatarState(WebglAvatarState.FINISHED, pipelineType);
+			request.Result = avatarData;
+			request.IsDone = true;
 		}
 
-		private IEnumerator AwaitAvatarCalculation (AvatarData avatar)
+		private IEnumerator DownloadAvatarFunc(AvatarData avatar, PipelineType pipelineType, AsyncRequest request)
 		{
-			UpdateAvatarState (WebglAvatarState.CALCULATING_IN_CLOUD);
-
-			var awaitCalculations = connection.AwaitAvatarCalculationsAsync (avatar);
-			yield return Await (awaitCalculations);
-
-			if (awaitCalculations.IsError) {
-				UpdateAvatarState (WebglAvatarState.FAILED);
-			} else {
-				avatar = awaitCalculations.Result;
-				UpdateAvatarState (WebglAvatarState.CALCULATED);
-			}
-		}
-
-		private IEnumerator DownloadAvatar (AvatarData avatar)
-		{
-			UpdateAvatarState (WebglAvatarState.DOWNLOADING);
-
 			//Update avatar info
 			int retryCount = 3;
 			bool gotAvatar = false;
-			while (!gotAvatar) {
-				if (retryCount == 0) {
-					UpdateAvatarState (WebglAvatarState.FAILED);
+			while (!gotAvatar)
+			{
+				if (retryCount == 0)
+				{
+					request.SetError("Unable to download avatar");
 					yield break;
 				}
-			
-				var updateAvatar = connection.GetAvatarAsync (avatar.code);
-				yield return Await (updateAvatar);
-				if (!updateAvatar.IsError) {
+
+				var updateAvatar = connection.GetAvatarAsync(avatar.code);
+				yield return Await(updateAvatar, pipelineType);
+				if (!updateAvatar.IsError)
+				{
 					gotAvatar = true;
 					avatar = updateAvatar.Result;
 				}
@@ -370,49 +385,110 @@ namespace ItSeez3D.AvatarSdkSamples.Cloud
 			// download avatar files
 			retryCount = 3;
 			bool isDownloaded = false;
-			while (!isDownloaded) {
-				if (retryCount == 0) {
-					UpdateAvatarState (WebglAvatarState.FAILED);
+			while (!isDownloaded)
+			{
+				if (retryCount == 0)
+				{
+					request.SetError("Unable to download avatar");
 					yield break;
 				}
 
-				var downloadAvatar = avatarProvider.DownloadAndSaveAvatarModelAsync(avatar, true, true);
-				yield return Await (downloadAvatar);
+				var downloadAvatar = avatarProvider.DownloadAndSaveAvatarModelAsync(avatar, pipelineType == PipelineType.FACE, true);
+				yield return Await(downloadAvatar, pipelineType);
 				isDownloaded = !downloadAvatar.IsError;
 				if (downloadAvatar.IsError)
-					yield return new WaitForSeconds (3);
+					yield return new WaitForSeconds(3);
 
 				retryCount--;
 			}
 
-			createdAvatar = avatar;
-			UpdateAvatarState (WebglAvatarState.FINISHED);
+			request.IsDone = true;
 		}
 
-		private IEnumerator Await (AsyncRequest r)
+		private static string StatePretty(WebglAvatarState state)
 		{
-			while (!r.IsDone) {
+			switch (state)
+			{
+				case WebglAvatarState.UPLOADING:
+					return "uploading photo to the server";
+				case WebglAvatarState.CALCULATING_IN_CLOUD:
+					return "deep learning inference";
+				case WebglAvatarState.DOWNLOADING:
+					return "downloading avatar files";
+				case WebglAvatarState.FINISHED:
+					return "done";
+				case WebglAvatarState.FAILED:
+					return "calculations failed, please try a different photo";
+			}
+
+			return "unknown state";
+		}
+
+		private void UpdateAvatarState(WebglAvatarState state, PipelineType pipelineType)
+		{
+			Debug.LogFormat("Pipeline: {0}, state: {1}", pipelineType, state);
+
+			if (pipelineType == PipelineType.FACE)
+			{
+				// Don't display avatar status of animated face pipeline
+				// It is being calculated in background
+				return;
+			}
+
+			avatarState = state;
+			statusText.text = string.Format("State: {0}", StatePretty(state));
+
+			uploadButton.gameObject.SetActive(false);
+			showButton.gameObject.SetActive(false);
+			statusText.gameObject.SetActive(true);
+			progressText.gameObject.SetActive(true);
+
+			if (state == WebglAvatarState.FAILED)
+				return;
+
+			switch (state)
+			{
+				case WebglAvatarState.FINISHED:
+					showButton.gameObject.SetActive(true);
+					statusText.gameObject.SetActive(false);
+					progressText.gameObject.SetActive(false);
+					break;
+				default:
+					break;
+			}
+		}
+
+		private IEnumerator Await(AsyncRequest r, PipelineType pipelineType)
+		{
+			while (!r.IsDone)
+			{
 				yield return null;
 
-				if (r.IsError) {
-					Debug.LogError (r.ErrorMessage);
+				if (r.IsError)
+				{
+					Debug.LogError(r.ErrorMessage);
 					yield break;
 				}
 
-				var progress = new List<string> ();
-				AsyncRequest request = r;
-				while (request != null) {
-					progress.Add (string.Format ("{0}: {1}%", request.State, request.ProgressPercent.ToString ("0.0")));
-					request = request.CurrentSubrequest;
-				}
+				if (pipelineType == PipelineType.HEAD)
+				{
+					var progress = new List<string>();
+					AsyncRequest request = r;
+					while (request != null)
+					{
+						progress.Add(string.Format("{0}: {1}%", request.State, request.ProgressPercent.ToString("0.0")));
+						request = request.CurrentSubrequest;
+					}
 
-				progressText.text = string.Join ("\n", progress.ToArray ());
+					progressText.text = string.Join("\n", progress.ToArray());
+				}
 			}
 
-			progressText.text = string.Empty;
+			if (pipelineType == PipelineType.HEAD)
+				progressText.text = string.Empty;
 		}
 
-		private void ChangeControlsState (bool isEnabled)
+		private void ChangeControlsState(bool isEnabled)
 		{
 			controlsEnabled = isEnabled;
 			browseButton.interactable = isEnabled;
@@ -422,19 +498,19 @@ namespace ItSeez3D.AvatarSdkSamples.Cloud
 			urlButton.interactable = isEnabled;
 		}
 
-		private void ResetControlsToDefaultState ()
+		private void ResetControlsToDefaultState()
 		{
-			urlUploadingStatusText.gameObject.SetActive (false);
-			uploadButton.gameObject.SetActive (true);
-			showButton.gameObject.SetActive (false);
+			urlUploadingStatusText.gameObject.SetActive(false);
+			uploadButton.gameObject.SetActive(true);
+			showButton.gameObject.SetActive(false);
 			statusText.text = string.Empty;
 			progressText.text = string.Empty;
 		}
 
-		private void ShowImageUploadingStatus (string message)
+		private void ShowImageUploadingStatus(string message)
 		{
 			urlUploadingStatusText.text = message;
-			urlUploadingStatusText.gameObject.SetActive (true);
+			urlUploadingStatusText.gameObject.SetActive(true);
 		}
 
 		private void HideImageUploadingStatus()

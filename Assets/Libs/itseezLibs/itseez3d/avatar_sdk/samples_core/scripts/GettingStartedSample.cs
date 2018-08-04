@@ -34,12 +34,17 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 		public Text progressText;
 		public Button[] buttons;
 		public Image photoPreview;
+		public Toggle facePipelineToggle;
+		public Toggle headPipelineToggle;
 		#endregion
 
 		protected FileBrowser fileBrowser = null;
 
 		// Instance of IAvatarProvider. Do not forget to call Dispose upon MonoBehaviour destruction.
 		protected IAvatarProvider avatarProvider = null;
+
+		// Pipeline type that will be used to generate avatar
+		protected PipelineType pipelineType = PipelineType.FACE;
 
 		protected virtual void Start()
 		{
@@ -48,9 +53,9 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 				return;
 
 			// first of all, initialize the SDK
-			AvatarSdkMgr.Init();
+			if (!AvatarSdkMgr.IsInitialized)
+				AvatarSdkMgr.Init(sdkType: sdkType);
 
-			avatarProvider = CoreTools.CreateAvatarProvider(sdkType);
 			StartCoroutine(Initialize());
 
 			// Anti-aliasing is required for hair shader, otherwise nice transparent texture won't work.
@@ -81,11 +86,20 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 			}
 		}
 
+		public virtual void OnPipelineTypeToggleChanged(bool isChecked)
+		{
+			if (facePipelineToggle.isOn)
+				pipelineType = PipelineType.FACE;
+			else if (headPipelineToggle.isOn)
+				pipelineType = PipelineType.HEAD;
+		}
+
 		/// <summary>
 		/// Initialize avatar provider
 		/// </summary>
-		private IEnumerator Initialize()
+		protected virtual IEnumerator Initialize()
 		{
+			avatarProvider = AvatarSdkMgr.IoCContainer.Create<IAvatarProvider>();
 			yield return Await(avatarProvider.InitializeAsync());
 		}
 
@@ -139,10 +153,10 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 		{
 			var avatarObject = GameObject.Find("ItSeez3D Avatar");
 			Destroy(avatarObject);
-			SetButtonsInteractable(false);
+			SetControlsInteractable(false);
 			photoPreview.gameObject.SetActive(false);
-			yield return StartCoroutine(GenerateAndDisplayHead(photoBytes));
-			SetButtonsInteractable(true);
+			yield return StartCoroutine(GenerateAndDisplayHead(photoBytes, pipelineType));
+			SetControlsInteractable(true);
 		}
 
 		/// <summary>
@@ -185,10 +199,14 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 		/// displaying an avatar is placed here in a single function. This function is also a good example of how to
 		/// chain asynchronous requests, just like in traditional sequential code.
 		/// </summary>
-		protected virtual IEnumerator GenerateAndDisplayHead(byte[] photoBytes)
+		protected virtual IEnumerator GenerateAndDisplayHead(byte[] photoBytes, PipelineType pipeline)
 		{
+			// Choose default set of resources to generate
+			var resourcesRequest = avatarProvider.ResourceManager.GetResourcesAsync(AvatarResourcesSubset.DEFAULT, pipelineType);
+			yield return Await(resourcesRequest);
+			
 			// generate avatar from the photo and get its code in the Result of request
-			var initializeRequest = avatarProvider.InitializeAvatarAsync(photoBytes);
+			var initializeRequest = avatarProvider.InitializeAvatarAsync(photoBytes, "name", "description", pipeline, resourcesRequest.Result);
 			yield return Await(initializeRequest);
 			string avatarCode = initializeRequest.Result;
 
@@ -202,19 +220,23 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 			yield return Await(avatarHeadRequest);
 			TexturedMesh headTexturedMesh = avatarHeadRequest.Result;
 
+			TexturedMesh haircutTexturedMesh = null;
 			// get identities of all haircuts available for the generated avatar
 			var haircutsIdRequest = avatarProvider.GetHaircutsIdAsync(avatarCode);
 			yield return Await(haircutsIdRequest);
 
 			// randomly select a haircut
 			var haircuts = haircutsIdRequest.Result;
-			var haircutIdx = UnityEngine.Random.Range(0, haircuts.Length);
-			var haircut = haircuts[haircutIdx];
+			if (haircuts != null && haircuts.Length > 0)
+			{
+				var haircutIdx = UnityEngine.Random.Range(0, haircuts.Length);
+				var haircut = haircuts[haircutIdx];
 
-			// load TexturedMesh for the chosen haircut 
-			var haircutRequest = avatarProvider.GetHaircutMeshAsync(avatarCode, haircut);
-			yield return Await(haircutRequest);
-			TexturedMesh haircutTexturedMesh = haircutRequest.Result;
+				// load TexturedMesh for the chosen haircut 
+				var haircutRequest = avatarProvider.GetHaircutMeshAsync(avatarCode, haircut);
+				yield return Await(haircutRequest);
+				haircutTexturedMesh = haircutRequest.Result;
+			}
 
 			DisplayHead(headTexturedMesh, haircutTexturedMesh);
 		}
@@ -231,8 +253,8 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 			// create head object in the scene
 			Debug.LogFormat("Generating Unity mesh object for head...");
 			var headObject = new GameObject("HeadObject");
-			headObject.AddComponent<MeshFilter>().mesh = headMesh.mesh;
-			var headMeshRenderer = headObject.AddComponent<MeshRenderer>();
+			var headMeshRenderer = headObject.AddComponent<SkinnedMeshRenderer>();
+			headMeshRenderer.sharedMesh = headMesh.mesh;
 			var headMaterial = new Material(Shader.Find("AvatarUnlitShader"));
 			headMaterial.mainTexture = headMesh.texture;
 			headMeshRenderer.material = headMaterial;
@@ -242,8 +264,8 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 			{
 				// create haircut object in the scene
 				var haircutObject = new GameObject("HaircutObject");
-				haircutObject.AddComponent<MeshFilter>().mesh = haircutMesh.mesh;
-				var haircutMeshRenderer = haircutObject.AddComponent<MeshRenderer>();
+				var haircutMeshRenderer = haircutObject.AddComponent<SkinnedMeshRenderer>();
+				haircutMeshRenderer.sharedMesh = haircutMesh.mesh;
 				var haircutMaterial = new Material(Shader.Find("AvatarUnlitHairShader"));
 				haircutMaterial.mainTexture = haircutMesh.texture;
 				haircutMeshRenderer.material = haircutMaterial;
@@ -252,18 +274,23 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 		}
 
 		/// <summary>
-		/// Allows to change buttons interactability.
+		/// Allows to change controls interactability.
 		/// </summary>
-		protected void SetButtonsInteractable(bool interactable)
+		protected virtual void SetControlsInteractable(bool interactable)
 		{
 			foreach (var b in buttons)
 				b.interactable = interactable;
+
+			if (facePipelineToggle != null)
+				facePipelineToggle.interactable = interactable;
+			if (headPipelineToggle != null)
+				headPipelineToggle.interactable = interactable;
 		}
 
 		/// <summary>
 		/// This is crucial! Don't forget to call Dispose for the avatar provider, or use "using" keyword.
 		/// </summary>
-		protected void OnDestroy()
+		protected virtual void OnDestroy()
 		{
 			Debug.LogFormat("Calling avatar provider dispose method!");
 			avatarProvider.Dispose();

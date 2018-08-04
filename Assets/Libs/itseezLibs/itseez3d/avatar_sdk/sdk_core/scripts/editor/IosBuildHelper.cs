@@ -31,10 +31,7 @@ public static class IosBuildHelper
 		PBXProject proj = new PBXProject ();
 		proj.ReadFromString (File.ReadAllText (projPath));
 		string targetGUID = proj.TargetGuidByName ("Unity-iPhone");
-		proj.AddFrameworkToProject (targetGUID, "Accelerate.framework", false);
-		proj.SetBuildProperty (targetGUID, "OTHER_LDFLAGS", "$(inherited) -force_load $(PROJECT_DIR)/Libraries/itseez3d/avatar_sdk/sdk_offline/Plugins/iOS/libtensorflow-core.a");
 		proj.SetBuildProperty (targetGUID, "IPHONEOS_DEPLOYMENT_TARGET", "8.0");
-		proj.SetBuildProperty (targetGUID, "ENABLE_BITCODE", "NO");
 		File.WriteAllText (projPath, proj.WriteToString ());
 		Debug.Log ("Linkage settings modified!");
 

@@ -167,7 +167,7 @@ namespace ItSeez3D.AvatarSdk.Core.Editor
 			}
 			GUI.enabled = !isRequestInProgress && !string.IsNullOrEmpty(clientId) && !string.IsNullOrEmpty(clientSecret);
 			if (GUILayout.Button("Test connection", GUILayout.Width(150), GUILayout.Height(25))) {
-				EditorCoroutine.Start(TestConnection());
+				EditorCoroutineManager.Start(TestConnection());
 			}
 			GUI.enabled = true;
 			GUILayout.FlexibleSpace ();
@@ -201,12 +201,10 @@ namespace ItSeez3D.AvatarSdk.Core.Editor
 			Debug.Log("Sending request to the server to test credentials.");
 			isRequestInProgress = true;
 			Connection connection = new Connection();
-			var form = new Dictionary<string, string>() {
-				{ "grant_type", "client_credentials" },
-				{ "client_id", clientId },
-				{ "client_secret", clientSecret },
-			};
-			var request = UnityWebRequest.Post(connection.GetAuthUrl(), form);
+
+			var credentials = new AccessCredentials(clientId, clientSecret);
+			var request = connection.GenerateAuthRequest(credentials);
+
 			#if UNITY_2017_2_OR_NEWER
 			request.SendWebRequest();
 			#else
@@ -216,23 +214,22 @@ namespace ItSeez3D.AvatarSdk.Core.Editor
 			while (!request.isDone)
 				yield return null;
 
-			Debug.LogFormat("{0}", request.downloadHandler.text);
+			Debug.LogFormat("Server response: {0}", request.downloadHandler.text);
 			AccessData accessData = JsonUtility.FromJson<AccessData>(request.downloadHandler.text);
+
 #if UNITY_2017_1_OR_NEWER
 			bool isError = request.isNetworkError;
 #else
 			bool isError = request.isError;
 #endif
-			if (isError || string.IsNullOrEmpty(accessData.access_token))
-			{
+
+			if (isError || string.IsNullOrEmpty(accessData.access_token)) {
 				Debug.LogErrorFormat("Connection error: {0}", request.error);
 				notificationMessage = "Unable to get access to the cloud API";
-			}
-			else if (string.IsNullOrEmpty(accessData.access_token)){
+			} else if (string.IsNullOrEmpty(accessData.access_token)) {
 				Debug.LogErrorFormat("Credentials are invalid: {0}", request.downloadHandler.text);
 				notificationMessage = "Credentials are invalid!";
-			}
-			else{
+			} else {
 				Debug.Log("Successful authentication!");
 				notificationMessage = "Successful authentication!";
 			}

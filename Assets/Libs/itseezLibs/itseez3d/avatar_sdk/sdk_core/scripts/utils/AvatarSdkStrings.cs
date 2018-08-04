@@ -65,6 +65,8 @@ namespace ItSeez3D.AvatarSdk.Core
 
 		public static string RequestingTextureInfo { get { return "Requesting texture info"; } }
 
+		public static string DownloadingThumbnail { get { return "Downloading thumbnail"; } }
+
 		public static string DownloadingHeadMesh { get { return "Downloading head mesh"; } }
 
 		public static string DownloadingHeadTexture { get { return "Downloading head texture"; } }
@@ -74,6 +76,8 @@ namespace ItSeez3D.AvatarSdk.Core
 		public static string DownloadingHaircutTexture { get { return "Downloading haircut texture"; } }
 
 		public static string DownloadingHaircutPointCloud { get { return "Downloading haircut points"; } }
+
+		public static string DownloadingHaircutPreview { get { return "Downloading haircut preview"; } }
 
 		public static string DownloadingAllHaircutPointClouds { get { return DownloadingHaircutPointCloud; } }
 
@@ -141,9 +145,13 @@ namespace ItSeez3D.AvatarSdk.Core
 
 		public static string GettingHaircutMesh { get { return "Getting haircut mesh"; } }
 
+		public static string GettingHaircutPreview { get { return "Getting haircut preview"; } }
+
 		public static string LoadingHaircut { get { return "Loading haircut"; } }
 
 		public static string GettingAvatarState { get { return "Getting avatar state"; } }
+
+		public static string GettingResourcesList { get { return "Getting resources list"; } }
 
 		#endregion
 
@@ -154,6 +162,8 @@ namespace ItSeez3D.AvatarSdk.Core
 		public static string LoadingResources { get { return "Loading resources"; } }
 
 		public static string ExtractingHaircut { get { return "Extracting haircut"; } }
+
+		public static string ExtractingHaircutPreview { get { return "Extracting haircut preview"; } }
 
 		public static string LoadingAnimations { get { return "Loading animations"; } }
 

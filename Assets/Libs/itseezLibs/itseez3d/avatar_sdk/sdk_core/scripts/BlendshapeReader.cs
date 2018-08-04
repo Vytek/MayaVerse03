@@ -16,33 +16,50 @@ namespace ItSeez3D.AvatarSdk.Core
 	/// <summary>
 	/// Read blendshapes from a simple binary format.
 	/// </summary>
-	public static class BlendshapeReader
+	public class BlendshapeReader
 	{
-		public static Vector3[] ReadVerticesDeltas (string blendshapeFilename, int[] indexMap, bool leftHandedCoordinates = true)
-		{
-			Vector3[] deltas, finalDeltas;
+		private Vector3[] reusableBuffer = null;
+		private int[] indexMap;
 
-			using (var fs = File.OpenRead (blendshapeFilename)) {
-				long arraySize = fs.Length / (sizeof(float) * 3);
-				deltas = new Vector3[arraySize];
-				using (var br = new BinaryReader (fs)) {
-					for (long vIdx = 0; vIdx < arraySize; ++vIdx) {
-						deltas [vIdx].x = -br.ReadSingle ();
-						deltas [vIdx].y = br.ReadSingle ();
-						deltas [vIdx].z = br.ReadSingle ();
-						if (!leftHandedCoordinates)
-							deltas [vIdx].x *= -1.0f;
+		public BlendshapeReader(int[] _indexMap)
+		{
+			indexMap = _indexMap;
+		}
+
+		public Vector3[] ReadVerticesDeltas (string blendshapeFilename, bool leftHandedCoordinates = true)
+		{
+			var buffer = File.ReadAllBytes (blendshapeFilename);
+
+			Vector3[] deltas, finalDeltas;
+			unsafe {
+				int vecSize = sizeof (Vector3);
+				int numDeltas = buffer.Length / vecSize;
+
+				if (reusableBuffer == null || reusableBuffer.Length != numDeltas) {
+					Debug.LogFormat ("Allocate reusable blendshape buffer for {0}", blendshapeFilename);
+					reusableBuffer = new Vector3[numDeltas];
+				}
+				deltas = reusableBuffer;
+
+				fixed (byte* bytePtr = &buffer[0]) {
+					for (int i = 0; i < numDeltas; ++i) {
+						float* ptr = (float*)(bytePtr + i * vecSize);
+						deltas[i].x = -(*ptr);
+						deltas[i].y = *(ptr + 1);
+						deltas[i].z = *(ptr + 2);
 					}
 				}
 			}
 
+			if (!leftHandedCoordinates)
+				for (int i = 0; i < deltas.Length; ++i)
+					deltas[i].x *= -1;
+
 			finalDeltas = new Vector3[indexMap.Length];
 			Debug.Assert (finalDeltas.Length >= deltas.Length, "indexMap array has incorrect length");
 
-			for (int i = 0; i < finalDeltas.Length; ++i) {
-				Debug.AssertFormat (indexMap [i] < deltas.Length, "Original vertex index is too big: {0}", indexMap [i]);
-				finalDeltas [i] = deltas [indexMap [i]];
-			}
+			for (int i = 0; i < finalDeltas.Length; ++i)
+				finalDeltas[i] = deltas [indexMap [i]];
 
 			return finalDeltas;
 		}

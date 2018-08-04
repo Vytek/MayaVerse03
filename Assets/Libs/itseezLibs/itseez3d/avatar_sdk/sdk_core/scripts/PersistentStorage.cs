@@ -14,6 +14,7 @@ using System.IO;
 using System.Text;
 using System.Linq;
 using UnityEngine;
+using SimpleJSON;
 
 namespace ItSeez3D.AvatarSdk.Core
 {
@@ -33,16 +34,21 @@ namespace ItSeez3D.AvatarSdk.Core
 	public enum AvatarFile
 	{
 		PHOTO,
+		THUMBNAIL,
 		MESH_PLY,
 		MESH_ZIP,
 		TEXTURE,
 		HAIRCUT_POINT_CLOUD_PLY,
 		HAIRCUT_POINT_CLOUD_ZIP,
 		ALL_HAIRCUT_POINTS_ZIP,
-		HAIRCUT_LIST,
+		HAIRCUT_LIST, //Obsolete. Will be removed in next releases. 
+		HAIRCUTS_JSON,
+		BLEDNSHAPES_JSON,
 		BLENDSHAPES_ZIP,
 		BLENDSHAPES_FBX_ZIP,
 		BLENDSHAPES_PLY_ZIP,
+		PARAMETERS_JSON,
+		PIPELINE_INFO
 	}
 
 	/// <summary>
@@ -53,6 +59,7 @@ namespace ItSeez3D.AvatarSdk.Core
 		HAIRCUT_MESH_PLY,
 		HAIRCUT_MESH_ZIP,
 		HAIRCUT_TEXTURE,
+		HAIRCUT_PREVIEW
 	}
 
 	/// <summary>
@@ -88,7 +95,13 @@ namespace ItSeez3D.AvatarSdk.Core
 
 		public abstract string GetHaircutFilename (string haircutId, HaircutFile file);
 
-		public abstract string GetAvatarHaircutFilename (string avatarCode, string haircutId, AvatarFile file);
+		public abstract Dictionary<string, string> GetAvatarHaircutsFilenames(string avatarCode);
+
+		public abstract string GetAvatarHaircutPointCloudFilename (string avatarCode, string haircutId);
+
+		public abstract string GetAvatarHaircutPointCloudZipFilename(string avatarCode, string haircutId);
+
+		public abstract List<string> GetAvatarBlendshapesDirs(string avatarCode);
 
 		public abstract void StorePlayerUID (string identifier, string uid);
 
@@ -110,22 +123,29 @@ namespace ItSeez3D.AvatarSdk.Core
 
 		private Dictionary<AvatarFile, string> avatarFiles = new Dictionary<AvatarFile, string> () {
 			{ AvatarFile.PHOTO, "photo.jpg" },
+			{ AvatarFile.THUMBNAIL, "thumbnail.jpg" },
 			{ AvatarFile.MESH_PLY, "model.ply" },  // corresponds to file name inside zip
 			{ AvatarFile.MESH_ZIP, "model.zip" },
 			{ AvatarFile.TEXTURE, "model.jpg" },
-			{ AvatarFile.HAIRCUT_POINT_CLOUD_PLY, "cloud_{0}.ply" },  // corresponds to file name inside zip
+			{ AvatarFile.HAIRCUT_POINT_CLOUD_PLY, "cloud_{0}.ply" },
 			{ AvatarFile.HAIRCUT_POINT_CLOUD_ZIP, "{0}_points.zip" },
 			{ AvatarFile.ALL_HAIRCUT_POINTS_ZIP, "all_haircut_points.zip" },
+			// "haircut_list.txt" isn't generated any more. Use "haircuts.json" instead of it.
 			{ AvatarFile.HAIRCUT_LIST, "haircut_list.txt" },
+			{ AvatarFile.HAIRCUTS_JSON, "haircuts.json" },
+			{ AvatarFile.BLEDNSHAPES_JSON, "blendshapes.json" },
 			{ AvatarFile.BLENDSHAPES_ZIP, "blendshapes.zip" },
 			{ AvatarFile.BLENDSHAPES_FBX_ZIP, "blendshapes_fbx.zip" },
 			{ AvatarFile.BLENDSHAPES_PLY_ZIP, "blendshapes_ply.zip" },
+			{ AvatarFile.PARAMETERS_JSON, "parameters.json"},
+			{ AvatarFile.PIPELINE_INFO, "pipeline.txt"},
 		};
 
 		private Dictionary<HaircutFile, string> haircutFiles = new Dictionary<HaircutFile, string> () {
 			{ HaircutFile.HAIRCUT_MESH_PLY, "{0}.ply" },  // corresponds to file name inside zip
 			{ HaircutFile.HAIRCUT_MESH_ZIP, "{0}_model.zip" },
 			{ HaircutFile.HAIRCUT_TEXTURE, "{0}_model.png" },
+			{ HaircutFile.HAIRCUT_PREVIEW, "{0}_preview.png"},
 		};
 
 		private string dataRoot = string.Empty;
@@ -227,14 +247,22 @@ namespace ItSeez3D.AvatarSdk.Core
 
 		public override string GetHaircutFilename (string haircutId, HaircutFile file)
 		{
+			haircutId = CoreTools.ConvertHaircutIdToNewFormat(haircutId);
 			var filename = string.Format (HaircutFilenames [file], haircutId);
 			return Path.Combine (GetHaircutsDirectory (), filename);
 		}
 
-		public override string GetAvatarHaircutFilename (string avatarCode, string haircutId, AvatarFile file)
+		public override string GetAvatarHaircutPointCloudFilename(string avatarCode, string haircutId)
 		{
-			var filename = string.Format (AvatarFilenames [file], haircutId);
-			return Path.Combine (GetAvatarDirectory (avatarCode), filename);
+			// Get haircut pointcloud file path from the haircuts_list file.
+			// If there is no such file or it doesn't contain requested haircut, use default naming
+			string pointCloudFilename = string.Format(AvatarFilenames[AvatarFile.HAIRCUT_POINT_CLOUD_PLY], haircutId);
+
+			var haircutsWithFilenames = GetAvatarHaircutsFilenames(avatarCode);
+			if (haircutsWithFilenames.ContainsKey(haircutId))
+				pointCloudFilename = haircutsWithFilenames[haircutId];
+
+			return Path.Combine(GetAvatarDirectory(avatarCode), pointCloudFilename);
 		}
 
 		private string PlayerUIDFilename (string identifier)
@@ -267,6 +295,77 @@ namespace ItSeez3D.AvatarSdk.Core
 				Debug.LogWarningFormat ("Could not read player_uid from file: {0}", ex.Message);
 				return null;
 			}
+		}
+
+		/// <summary>
+		/// Reads haircuts' ids and pointcloud filenames from the haircuts list file 
+		/// </summary>
+		public override Dictionary<string, string> GetAvatarHaircutsFilenames(string avatarCode)
+		{
+			Dictionary<string, string> haircuts = new Dictionary<string, string>();
+			try
+			{
+				string haircutsListFilename = GetAvatarFilename(avatarCode, AvatarFile.HAIRCUT_LIST);
+				string haircutsJsonFilename = GetAvatarFilename(avatarCode, AvatarFile.HAIRCUTS_JSON);
+
+				if (File.Exists(haircutsListFilename))
+				{
+					// this avatar was generated by version 1.4.0 or earlier
+					string[] haircutListContent = File.ReadAllLines(haircutsListFilename);
+					foreach (string line in haircutListContent)
+					{
+						string haircutId = line;
+						haircuts.Add(haircutId, string.Format(AvatarFilenames[AvatarFile.HAIRCUT_POINT_CLOUD_PLY], haircutId));
+					}
+				}
+				else if (File.Exists(haircutsJsonFilename))
+				{
+					var jsonContent = JSON.Parse(File.ReadAllText(haircutsJsonFilename));
+					foreach (var haircutNameJson in jsonContent.Keys)
+					{
+						string haircutId = haircutNameJson.Value.ToString().Replace("\"", "");
+						var haircutPathJson = jsonContent[haircutId];
+						haircuts.Add(haircutId, haircutPathJson.ToString().Replace("\"", ""));
+					}
+				}
+			}
+			catch (Exception exc)
+			{
+				Debug.LogErrorFormat("Unable to read haircuts json file: {0}", exc);
+			}
+			return haircuts;
+		}
+
+		public override string GetAvatarHaircutPointCloudZipFilename(string avatarCode, string haircutId)
+		{
+			string zipFilename = string.Format(AvatarFilenames[AvatarFile.HAIRCUT_POINT_CLOUD_ZIP], haircutId);
+			return Path.Combine(GetAvatarDirectory(avatarCode), zipFilename);
+		}
+
+		public override List<string> GetAvatarBlendshapesDirs(string avatarCode)
+		{
+			List<string> blendshapesDirs = new List<string>();
+			try
+			{
+				string blendshapesJsonFilename = GetAvatarFilename(avatarCode, AvatarFile.BLEDNSHAPES_JSON);
+				if (File.Exists(blendshapesJsonFilename))
+				{
+					var jsonContent = JSON.Parse(File.ReadAllText(blendshapesJsonFilename));
+					foreach (var blendshapesNameJson in jsonContent.Keys)
+					{
+						string blendshapesId = blendshapesNameJson.Value.ToString().Replace("\"", "");
+						var blendshapesPathJson = jsonContent[blendshapesId];
+						blendshapesDirs.Add(Path.Combine(GetAvatarDirectory(avatarCode), blendshapesPathJson.ToString().Replace("\"", "")));
+					}
+				}
+				else
+					blendshapesDirs.Add(GetAvatarSubdirectory(avatarCode, AvatarSubdirectory.BLENDSHAPES));
+			}
+			catch (Exception exc)
+			{
+				Debug.LogErrorFormat("Unable to read blendshapes json file: {0}", exc);
+			}
+			return blendshapesDirs;
 		}
 
 		#endregion

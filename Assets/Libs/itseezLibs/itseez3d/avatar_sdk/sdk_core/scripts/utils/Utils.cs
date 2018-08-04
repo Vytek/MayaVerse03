@@ -87,10 +87,10 @@ namespace ItSeez3D.AvatarSdk.Core
 			return false;
 		}
 
-		public static GameObject FindSubobjectByName (GameObject obj, string name)
+		public static GameObject FindSubobjectByName (GameObject obj, string name, bool includeInactive = true)
 		{
-			foreach (var trans in obj.GetComponentsInChildren<Transform>())
-				if (trans.name == obj.name)
+			foreach (var trans in obj.GetComponentsInChildren<Transform>(includeInactive))
+				if (trans.name == name)
 					return trans.gameObject;
 
 			return null;

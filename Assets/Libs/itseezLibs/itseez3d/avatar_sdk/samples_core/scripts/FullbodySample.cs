@@ -9,6 +9,7 @@
 */
 
 using ItSeez3D.AvatarSdk.Core;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -31,6 +32,12 @@ namespace ItSeez3D.AvatarSdkSamples.Core
 
 		protected override void DisplayHead(TexturedMesh headMesh, TexturedMesh haircutMesh)
 		{
+			if (pipelineType != PipelineType.FACE)
+			{
+				Debug.LogErrorFormat("Avatar from the {0} can't be used in Fullbody sample!", pipelineType);
+				return;
+			}
+
 			// create parent avatar object in a scene, attach a script to it to allow rotation by mouse
 			var avatarObject = new GameObject("ItSeez3D Avatar");
 

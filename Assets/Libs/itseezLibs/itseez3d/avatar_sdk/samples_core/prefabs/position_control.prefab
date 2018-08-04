@@ -470,9 +470,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   positionType: 0
   slider: {fileID: 114197946855570992}
-  minValue: 0
-  maxValue: 0
-  initialValue: 0
 --- !u!114 &114920908276783054
 MonoBehaviour:
   m_ObjectHideFlags: 1

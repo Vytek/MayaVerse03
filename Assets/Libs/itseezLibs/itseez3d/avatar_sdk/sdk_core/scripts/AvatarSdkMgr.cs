@@ -38,6 +38,8 @@ namespace ItSeez3D.AvatarSdk.Core
 		private IPersistentStorage persistentStorage;
 		private GameObject utilityGameObject;
 
+		private static IoCContainer iocContainer = null;
+
 		private static bool initialized = false;
 
 		/// <summary>
@@ -54,7 +56,8 @@ namespace ItSeez3D.AvatarSdk.Core
 		/// and override whatever methods you need (but this is up to app developers).</param>
 		public static void Init (
 			IStringManager stringMgr = null,
-			IPersistentStorage storage = null
+			IPersistentStorage storage = null,
+			SdkType sdkType = SdkType.Cloud
 		)
 		{
 			if (initialized) {
@@ -72,6 +75,8 @@ namespace ItSeez3D.AvatarSdk.Core
 			if (storage == null)
 				storage = new DefaultPersistentStorage ();
 			sdk.persistentStorage = storage;
+
+			iocContainer = new IoCContainer(sdkType);
 		}
 
 		/// <summary>
@@ -85,6 +90,14 @@ namespace ItSeez3D.AvatarSdk.Core
 		public static void SpawnCoroutine (IEnumerator routine)
 		{
 			Instance.utilityGameObject.GetComponent<MonoBehaviour> ().StartCoroutine (routine);
+		}
+
+		/// <summary>
+		/// Stop coroutine
+		/// </summary>
+		public static void StopCoroutine(string routineName)
+		{
+			Instance.utilityGameObject.GetComponent<MonoBehaviour>().StopCoroutine(routineName);
 		}
 
 		/// <summary>
@@ -102,6 +115,14 @@ namespace ItSeez3D.AvatarSdk.Core
 		public static IPersistentStorage Storage ()
 		{
 			return Instance.persistentStorage;
+		}
+
+		/// <summary>
+		/// Return IoCContainer that allows to resolve interface implementations 
+		/// </summary>
+		public static IoCContainer IoCContainer
+		{
+			get { return iocContainer; }
 		}
 
 		#region Singleton stuff
