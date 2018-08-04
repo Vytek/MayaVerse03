@@ -30,7 +30,21 @@ The software is currently only developed for Windows platform.
 
 The current Client system is based on SW:
 
-3D Graphics Engine: Unity3D 2017.3.1f01
+3D Graphics Engine Config:
+
+Versions
+  Unity: 2017.4.8f1 (5ab7f4878ef1)
+  
+  VRTK: 3.3.0 (may not be correct if source is GitHub)
+  
+  SteamVR: 1.2.3
+  
+VR Settings
+  Standalone: None, OpenVR
+Scripting Define Symbols
+  Standalone: VRTK_DEFINE_SDK_STEAMVR;VRTK_DEFINE_STEAMVR_PLUGIN_1_2_1_OR_NEWER;VRTK_DEFINE_STEAMVR_PLUGIN_1_2_2_OR_NEWER
+  WSA: VRTK_DEFINE_SDK_WINDOWSMR
+  WSA: VRTK_DEFINE_SDK_WINDOWSMR
 
 See list below
 
@@ -55,6 +69,7 @@ Configuration git:
 - https://github.com/thestonefox/VRTK (Commit: d88c9eafc31975bb9566e5747c12e48e5f75fa3d)
 - https://github.com/ValveSoftware/steamvr_unity_plugin
 - https://github.com/KhronosGroup/UnityGLTF
+- https://github.com/atteneder/glTFast
 - https://github.com/AKuellar/LSky-v2
 - https://github.com/BananaHemic/Mumble-Unity
 - https://github.com/sampaiodias/unity-cli
@@ -72,6 +87,7 @@ Configuration git:
 - https://google.github.io/flatbuffers/
 - https://github.com/PimDeWitte/UnityMainThreadDispatcher
 - https://github.com/Vytek/MVUpdateDB
+- https://github.com/mbdavid/LiteDB
 
 ## Free Assets ##
 

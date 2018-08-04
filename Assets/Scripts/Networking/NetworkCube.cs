@@ -23,18 +23,27 @@ public class NetworkCube : MonoBehaviour {
         lastRotation = transform.rotation;
     }
 
+	/// <summary>
+	/// Thises the will be executed on the main thread.
+	/// </summary>
+	/// <returns>The will be executed on the main thread.</returns>
     public IEnumerator ThisWillBeExecutedOnTheMainThread()
     {
         Debug.Log("This is executed from the main thread");
         //transform.position = new Vector3(newMessage.GameObjectPos.x, newMessage.GameObjectPos.y, newMessage.GameObjectPos.z);
         lastPosition = nextPosition;
         transform.position = nextPosition;
+		//Added rotation
         lastRotation = nextRotation;
         transform.rotation = nextRotation;
-        //Add rotation
         yield return null;
     }
 
+	/// <summary>
+	/// Networks the manager on receive message from game object update.
+	/// </summary>
+	/// <returns>The manager on receive message from game object update.</returns>
+	/// <param name="newMessage">New message.</param>
     void NetworkManager_OnReceiveMessageFromGameObjectUpdate (NetworkManager.ReceiveMessageFromGameObject newMessage)
     {
         Debug.Log ("Raise event in GameObject");
@@ -52,8 +61,8 @@ public class NetworkCube : MonoBehaviour {
         }
     }
     
-    // Update is called once per frame
-    void Update () {
+    // FixedUpdate is NOT called once per frame
+    void FixedUpdate () {
         if ((Vector3.Distance(transform.position, lastPosition) > 0.05) || (Quaternion.Angle(transform.rotation, lastRotation) > 0.3))
         {
 			NetworkManager.instance.SendMessage(NetworkManager.SendType.SENDTOOTHER, NetworkManager.PacketId.OBJECT_MOVE, this.objectID, String.Empty, true ,transform.position, transform.rotation);
