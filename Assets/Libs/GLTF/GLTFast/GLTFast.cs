@@ -38,23 +38,24 @@ namespace GLTFast {
 
         IMaterialGenerator materialGenerator;
 
-        public GLTFast( byte[] bytes, Transform parent = null ) {
+        public GLTFast() {
             materialGenerator = new DefaultMaterialGenerator();
-            LoadGlb(bytes,parent);
         }
 
-        public static GLTFast LoadGlbFile( string path, Transform parent = null )
+        public static bool LoadGlbFile( string path, Transform parent = null )
         {
             var bytes = File.ReadAllBytes(path);
 
             if (bytes == null || bytes.Length < 12)
             {
-                return null;
+                Debug.LogError("Couldn't load GLB file.");
+                return false;
             }
-            return new GLTFast( bytes, parent );
+            var glTFast = new GLTFast();
+            return glTFast.LoadGlb(bytes,parent);
         }
 
-        bool LoadGlb( byte[] bytes, Transform parent = null ) {
+        public bool LoadGlb( byte[] bytes, Transform parent = null ) {
             uint magic = BitConverter.ToUInt32( bytes, 0 );
 
             if (magic != GLB_MAGIC)
@@ -102,12 +103,12 @@ namespace GLTFast {
             if(gltf!=null) {
                 //Debug.Log(gltf);
                 binChunks = binChunksList.ToArray();
-                CreateGameObjects( parent, bytes );
+                return CreateGameObjects( parent, bytes );
             }
-            return true;
+            return false;
         }
 
-        void CreateGameObjects( Transform parent, byte[] bytes ) {
+        bool CreateGameObjects( Transform parent, byte[] bytes ) {
 
             var primitives = new List<Primitive>(gltf.meshes.Length);
             var meshPrimitiveIndex = new int[gltf.meshes.Length+1];
@@ -135,9 +136,11 @@ namespace GLTFast {
                         } else
                         if(!string.IsNullOrEmpty(img.uri)) {
                             Debug.LogError("Loading from URI not supported");
+                            return false;
                         }
                     } else {
                         Debug.LogErrorFormat("Unknown image mime type {0}",img.mimeType);
+                        return false;
                     }
                 }
             }
@@ -177,18 +180,70 @@ namespace GLTFast {
                         break;
                     default:
                         Debug.LogErrorFormat( "Invalid index format {0}", accessor.componentType );
-                        break;
+                        return false;
                     }
+
+                    #if DEBUG
+                    if( accessor.min!=null && accessor.min.Length>0 && accessor.max!=null && accessor.max.Length>0 ) {
+                        int minInt = (int) accessor.min[0];
+                        int maxInt = (int) accessor.max[0];
+                        int minIndex = int.MaxValue;
+                        int maxIndex = int.MinValue;
+                        foreach (var index in indices) {
+                        Assert.IsTrue( index >= minInt );
+                        Assert.IsTrue( index <= maxInt );
+                        minIndex = Math.Min(minIndex,index);
+                        maxIndex = Math.Max(maxIndex,index);
+                        }
+                        if( minIndex!=minInt
+                        || maxIndex!=maxInt
+                        ) {
+                        Debug.LogErrorFormat("Faulty index bounds: is {0}:{1} expected:{2}:{3}",minIndex,maxIndex,minInt,maxInt);
+                        }
+                    }
+                    #endif
 
                     // position
                     int pos = primitive.attributes.POSITION;
                     Assert.IsTrue(pos>=0);
                     #if DEBUG
                     Assert.AreEqual( GetAccessorTye(gltf.accessors[pos].typeEnum), typeof(Vector3) );
-#endif
+                    #endif
 					var positions = gltf.IsAccessorInterleaved(pos)
 		                ? GetAccessorDataInterleaved<Vector3>( pos, ref bytes, Extractor.GetVector3sInterleaved )
 		                : GetAccessorData<Vector3>( pos, ref bytes, Extractor.GetVector3s );
+
+                    #if DEBUG
+                    var posAcc = gltf.accessors[pos];
+                    Vector3 minPos = new Vector3( (float) posAcc.min[0], (float) posAcc.min[1], (float) posAcc.min[2] );
+                    Vector3 maxPos = new Vector3( (float) posAcc.max[0], (float) posAcc.max[1], (float) posAcc.max[2] );
+                    foreach (var p in positions) {
+                        if( ! (p.x >= minPos.x
+                            && p.y >= minPos.y
+                            && p.z >= minPos.z
+                            && p.x <= maxPos.x
+                            && p.y <= maxPos.y
+                            && p.z <= maxPos.z
+                            ))
+                        {
+                            Debug.LogError("Vertex outside of limits");
+                            break;
+                        }
+                    }
+
+                    var pUsage = new int[positions.Length];
+                    foreach (var index in indices) {
+                        pUsage[index] += 1;
+                    }
+                    int pMin = int.MaxValue;
+                    foreach (var u in pUsage) {
+                        pMin = Math.Min(pMin,u);
+                    }
+                    if(pMin<1) {
+                        Debug.LogError("Unused vertices");
+                    }
+                    #endif
+
 
                     Vector3[] normals = null;
                     if(primitive.attributes.NORMAL>=0) {
@@ -218,6 +273,13 @@ namespace GLTFast {
                     GetColors(primitive.attributes.COLOR_0, ref bytes, out colors32, out colors);
 
                     var msh = new UnityEngine.Mesh();
+                    if( positions.Length > 65536 ) {
+#if UNITY_2017_3_OR_NEWER
+                        msh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+#else
+                        throw new System.Exception("Meshes with more than 65536 vertices are only supported from Unity 2017.3 onwards.");
+#endif
+                    }
                     msh.name = mesh.name;
                     msh.vertices = positions;
                     msh.SetIndices(indices, MeshTopology.Triangles, 0);
@@ -293,6 +355,7 @@ namespace GLTFast {
 						go.transform.localScale = m.lossyScale;
                     } else {
                         Debug.LogErrorFormat("Invalid matrix on node {0}",nodeIndex);
+                        return false;
                     }
                 } else {
                     if(node.translation!=null) {
@@ -367,6 +430,7 @@ namespace GLTFast {
                     
                 }
             }
+            return true;
         }
 
         public void Destroy() {
