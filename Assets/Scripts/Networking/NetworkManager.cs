@@ -67,7 +67,7 @@ public class NetworkManager : MonoBehaviour
         SENDTOALL = 0,
         SENDTOOTHER = 1,
         SENDTOSERVER = 2,
-        SENDTOUID = 3
+        SENDTOUID = 3 //NOT IMPLEMENTED
     }
 
     /// <summary>
@@ -80,8 +80,10 @@ public class NetworkManager : MonoBehaviour
         PLAYER_SPAWN = 2,
         OBJECT_SPAWN = 3,
         PLAYER_MOVE = 4,
-        MESSAGE_SERVER = 5
+        MESSAGE_SERVER = 5,
+        OBJECT_UNSPAWN = 6
     }
+
 
     /// <summary>
     /// Command type.
@@ -301,6 +303,9 @@ public class NetworkManager : MonoBehaviour
                 break;
             case PacketId.MESSAGE_SERVER:
                 TypeBuffer = 5;
+                break;
+            case PacketId.OBJECT_UNSPAWN:
+                TypeBuffer = 6;
                 break;
             default:
                 TypeBuffer = 1;
