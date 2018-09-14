@@ -72,12 +72,13 @@ Configuration git:
 - https://github.com/atteneder/glTFast
 - https://github.com/AKuellar/LSky-v2
 - https://github.com/BananaHemic/Mumble-Unity
-- https://github.com/sampaiodias/unity-cli
 
 ### Tools ###
 
-- https://github.com/gportelli/UnityScreenLogger
-- https://github.com/Tayx94/graphy
+- https://github.com/gportelli/UnityScreenLogger (MIT)
+- https://github.com/Tayx94/graphy (MIT)
+- https://github.com/sampaiodias/unity-cli (NOT USED BUT INCLUDED) (Creative Commons 4.0)
+- https://github.com/stillwwater/command_terminal (MIT)
 
 ### Networking ###
 
