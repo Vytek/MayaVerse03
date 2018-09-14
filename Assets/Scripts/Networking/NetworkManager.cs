@@ -519,7 +519,7 @@ public class NetworkManager : MonoBehaviour
     /// <param name="vrot">V rot.</param>
     /// <param name="vID">V identifier.</param>
     /// <param name="vIPFSHash">VIPFSHash.</param>
-    public void RezObject(Vector3 vpos, Quaternion vrot, int vID, string vIPFSHash)
+    public void RezObject(Vector3 vpos, Quaternion vrot, ushort vID, string vIPFSHash)
     {
         //Calculate all 
         //Call UnityMainThreadDispatcher to spawn
@@ -535,7 +535,7 @@ public class NetworkManager : MonoBehaviour
     /// </summary>
     /// <param name="vID">V identifier.</param>
     /// <param name="vIPFSHash">V IPFSH ash.</param>
-    public void UnRezObject(int vID, string vIPFSHash)
+    public void UnRezObject(ushort vID, string vIPFSHash)
     {
         //Call UnityMainThreadDispatcher to destroy object
         //SendCommand to other Clients to UnRez Object
@@ -613,7 +613,7 @@ public class NetworkManager : MonoBehaviour
         //GLTF Uri
         //Define UID
         //Activate/Deactivate Dissolve Shader (see: https://github.com/kwnetzwelt/unity3d-dissolve-shader and https://github.com/JPBotelho/Dissolve-Shader)
-
+		yield return null;
     }
 
     /// <summary>
@@ -625,6 +625,7 @@ public class NetworkManager : MonoBehaviour
     public IEnumerator UnSpawnObjectInMainThread(int ID, String IPFSHash)
     {
         //UnSpawn GameObject (How use with Pool for https://github.com/reneabreu/UltimateSpawner?)
+		yield return null;
     }
 
     #region Utility
