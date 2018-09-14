@@ -461,6 +461,16 @@ public class NetworkManager : MonoBehaviour
             {
                 UnityMainThreadDispatcher.Instance().Enqueue(SpawnPlayerInMainThread(new Vector3(ObjectReceived.Pos.X, ObjectReceived.Pos.Y, ObjectReceived.Pos.Z), new Quaternion(ObjectReceived.Rot.X, ObjectReceived.Rot.Y, ObjectReceived.Rot.Z, ObjectReceived.Rot.W), ObjectReceived.Owner));
             }
+            else if ((byte)PacketId.OBJECT_SPAWN == ObjectReceived.Type)
+            {
+                //TO DO
+                UnityMainThreadDispatcher.Instance().Enqueue(SpawnObjectInMainThread(new Vector3(ObjectReceived.Pos.X, ObjectReceived.Pos.Y, ObjectReceived.Pos.Z), new Quaternion(ObjectReceived.Rot.X, ObjectReceived.Rot.Y, ObjectReceived.Rot.Z, ObjectReceived.Rot.W), ObjectReceived.ID, ObjectReceived.Owner));
+            }
+            else if ((byte)PacketId.OBJECT_UNSPAWN == ObjectReceived.Type)
+            {
+                //TO DO
+                UnityMainThreadDispatcher.Instance().Enqueue(UnSpawnObjectInMainThread(new Vector3(ObjectReceived.Pos.X, ObjectReceived.Pos.Y, ObjectReceived.Pos.Z), new Quaternion(ObjectReceived.Rot.X, ObjectReceived.Rot.Y, ObjectReceived.Rot.Z, ObjectReceived.Rot.W), ObjectReceived.ID, ObjectReceived.Owner));
+            }
         }
         else if (STypeBuffer == (byte)SendType.SENDTOSERVER)
         {
@@ -501,6 +511,37 @@ public class NetworkManager : MonoBehaviour
         }
     }
     #endregion
+
+    /// <summary>
+    /// Rezs the object.
+    /// </summary>
+    /// <param name="vpos">V pos.</param>
+    /// <param name="vrot">V rot.</param>
+    /// <param name="vID">V identifier.</param>
+    /// <param name="vIPFSHash">VIPFSHash.</param>
+    public void RezObject(Vector3 vpos, Quaternion vrot, int vID, string vIPFSHash)
+    {
+        //Calculate all 
+        //Call UnityMainThreadDispatcher to spawn
+        //Set correct ID
+        //Set GameObject Name = GLTF_<vIPFSHash>
+        //SendCommand to other Clients to Rez Object
+        SendMessage(SendType.SENDTOOTHER, PacketId.OBJECT_SPAWN, vID, this.UID + ";" + this.AvatarName, true, lastPosition, lastRotation); //TO MODIFY
+        //Send Reliable Message?
+    }
+
+    /// <summary>
+    /// Uns the rez object.
+    /// </summary>
+    /// <param name="vID">V identifier.</param>
+    /// <param name="vIPFSHash">V IPFSH ash.</param>
+    public void UnRezObject(int vID, string vIPFSHash)
+    {
+        //Call UnityMainThreadDispatcher to destroy object
+        //SendCommand to other Clients to UnRez Object
+        SendMessage(SendType.SENDTOOTHER, PacketId.OBJECT_SPAWN, vID, this.UID + ";" + this.AvatarName, true, lastPosition, lastRotation); //TO MODIFY
+        //Send Reliable Message?
+    }
 
     // Update is called once per frame, Now using FixedUpdate
     void FixedUpdate()
@@ -554,6 +595,36 @@ public class NetworkManager : MonoBehaviour
         clone.transform.Find("RightHand").gameObject.GetComponent<NetworkPlayer>().UID = tokensUIDAvatarName[0] + "_RHAND";
         clone.transform.Find("LeftHand").gameObject.GetComponent<NetworkPlayer>().UID = tokensUIDAvatarName[0] + "_LHAND";
         yield return null;
+    }
+
+    /// <summary>
+    /// Spawns the object in main thread.
+    /// </summary>
+    /// <returns>The object in main thread.</returns>
+    /// <param name="pos">Position.</param>
+    /// <param name="rot">Rot.</param>
+    /// <param name="UID">Uid.</param>
+    /// <param name="IPFSHash">IPFSHash.</param>
+    public IEnumerator SpawnObjectInMainThread(Vector3 pos, Quaternion rot, int ID, String IPFSHash)
+    {
+        //Spawn GameObject (Using Pool and https://github.com/reneabreu/UltimateSpawner)
+
+        //Define URL for IPFS GateWays
+        //GLTF Uri
+        //Define UID
+        //Activate/Deactivate Dissolve Shader (see: https://github.com/kwnetzwelt/unity3d-dissolve-shader and https://github.com/JPBotelho/Dissolve-Shader)
+
+    }
+
+    /// <summary>
+    /// Uns the spawn object in main thread.
+    /// </summary>
+    /// <returns>The spawn object in main thread.</returns>
+    /// <param name="ID">Identifier.</param>
+    /// <param name="IPFSHash">IPFSH ash.</param>
+    public IEnumerator UnSpawnObjectInMainThread(int ID, String IPFSHash)
+    {
+        //UnSpawn GameObject (How use with Pool for https://github.com/reneabreu/UltimateSpawner?)
     }
 
     #region Utility
