@@ -11,6 +11,11 @@ using FlatBuffers;
 using HazelTest;
 using TMPro;
 using QuickPool;
+using GLTF;
+using GLTF.Schema;
+using UnityEngine;
+using UnityGLTF.Loader;
+using UnityGLTF;
 
 /// <summary>
 /// Network manager.
@@ -527,12 +532,14 @@ public class NetworkManager : MonoBehaviour
     /// <param name="vIPFSHash">VIPFSHash.</param>
     public void RezObject(Vector3 vpos, Quaternion vrot, ushort vID, string vIPFSHash)
     {
-        //Calculate all 
+        //Calculate all
+        vID = (ushort)(GameObjectTracker.AllGameObjects.Count + 1);
         //Call UnityMainThreadDispatcher to spawn
+
         //Set correct ID
         //Set GameObject Name = GLTF_<vIPFSHash>
         //SendCommand to other Clients to Rez Object
-        SendMessage(SendType.SENDTOOTHER, PacketId.OBJECT_SPAWN, vID, this.UID + ";" + this.AvatarName, true, lastPosition, lastRotation); //TO MODIFY
+        SendMessage(SendType.SENDTOOTHER, PacketId.OBJECT_SPAWN, vID, this.AvatarName+";"+vIPFSHash, true, lastPosition, lastRotation); //TO MODIFY
         //Send Reliable Message?
     }
 
@@ -611,15 +618,20 @@ public class NetworkManager : MonoBehaviour
     /// <param name="rot">Rot.</param>
     /// <param name="UID">Uid.</param>
     /// <param name="IPFSHash">IPFSHash.</param>
-    public IEnumerator SpawnObjectInMainThread(Vector3 pos, Quaternion rot, int ID, String IPFSHash)
+    public IEnumerator SpawnObjectInMainThread(Vector3 pos, Quaternion rot, ushort ID, String IPFSHash)
     {
-        //Spawn GameObject (Using Pool and https://github.com/reneabreu/UltimateSpawner)
-
+        //Spawn GameObject (Using Pool and https://github.com/reneabreu/UltimateSpawner? NO!)
+        GameObject gobuffer = NetworkObjectPrefab.Spawn(pos, rot);
+        gobuffer.name = "GLTF_" + IPFSHash;
+        //See: https://ipfs.github.io/public-gateway-checker/
         //Define URL for IPFS GateWays
         //GLTF Uri
+        gobuffer.GetComponent<GLTFComponent>().GLTFUri = "https://ipfs.io/ipfs/" + IPFSHash;
+        gobuffer.GetComponent<NetworkObject>().objectID = ID;
         //Define UID
+        gobuffer.GetComponent<NetworkObject>().UID = this.AvatarName + ";" + IPFSHash;
         //Activate/Deactivate Dissolve Shader (see: https://github.com/kwnetzwelt/unity3d-dissolve-shader and https://github.com/JPBotelho/Dissolve-Shader)
-		yield return null;
+        yield return null;
     }
 
     /// <summary>
