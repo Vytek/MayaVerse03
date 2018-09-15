@@ -10,15 +10,16 @@ using Hazel.Udp;
 using FlatBuffers;
 using HazelTest;
 using TMPro;
+using QuickPool;
 
 /// <summary>
 /// Network manager.
 /// </summary>
+[RequireComponent(typeof(PoolsManager))]
 public class NetworkManager : MonoBehaviour
 {
 
     public bool DEBUG = true;
-
     public int portNumber = 4296;
     public string ipAddress = "127.0.0.1";
 
@@ -29,9 +30,12 @@ public class NetworkManager : MonoBehaviour
 
     public GameObject PlayerPrefab;
     public GameObject PlayerME;
+    public GameObject NetworkObjectPrefab;
 
     private Vector3 lastPosition = Vector3.zero;
     private Quaternion lastRotation = Quaternion.identity;
+    //Pool
+    private PoolsManager poolObj;
 
     /// <summary>
     /// Type ReceiveMessageFromGameObject
@@ -204,6 +208,8 @@ public class NetworkManager : MonoBehaviour
         lastPosition = PlayerME.transform.position;
         lastRotation = PlayerME.transform.rotation;
         Debug.Log("Network Trasmitted.");
+        //START POOL MANAGER FOR NETWORKOBJECTS
+        poolObj = PoolsManager.Instance;
     }
 
     /// <summary>
@@ -469,7 +475,7 @@ public class NetworkManager : MonoBehaviour
             else if ((byte)PacketId.OBJECT_UNSPAWN == ObjectReceived.Type)
             {
                 //TO DO
-                UnityMainThreadDispatcher.Instance().Enqueue(UnSpawnObjectInMainThread(new Vector3(ObjectReceived.Pos.X, ObjectReceived.Pos.Y, ObjectReceived.Pos.Z), new Quaternion(ObjectReceived.Rot.X, ObjectReceived.Rot.Y, ObjectReceived.Rot.Z, ObjectReceived.Rot.W), ObjectReceived.ID, ObjectReceived.Owner));
+                UnityMainThreadDispatcher.Instance().Enqueue(UnSpawnObjectInMainThread(ObjectReceived.ID, ObjectReceived.Owner));
             }
         }
         else if (STypeBuffer == (byte)SendType.SENDTOSERVER)
@@ -622,7 +628,7 @@ public class NetworkManager : MonoBehaviour
     /// <returns>The spawn object in main thread.</returns>
     /// <param name="ID">Identifier.</param>
     /// <param name="IPFSHash">IPFSH ash.</param>
-    public IEnumerator UnSpawnObjectInMainThread(int ID, String IPFSHash)
+    public IEnumerator UnSpawnObjectInMainThread(ushort ID, String IPFSHash)
     {
         //UnSpawn GameObject (How use with Pool for https://github.com/reneabreu/UltimateSpawner?)
 		yield return null;

@@ -6,5 +6,5 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Libs/itseezLibs/itseez3d/avatar_sdk/samples_cloud/05_resources_sample_cloud/scenes/05_resources_sample_cloud.unity
-    guid: 45ceaeafeb036d242b5453f1ab34bfa4
+    path: Assets/Scripts/QuickPool/Demo/Scenes/DemoScene1.unity
+    guid: 080782ef7936b9740b0cc266e8dcf000

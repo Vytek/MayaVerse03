@@ -9,7 +9,8 @@ public class NetworkObject : MonoBehaviour {
 
 	//The ID this object (so we can check if it's us updating)
 	public ushort objectID;
-	public bool DEBUG = true;
+    public string UID = string.Empty;
+    public bool DEBUG = true;
 	public float InterRate = 9;
 
 	Vector3 lastPosition = Vector3.zero;
@@ -112,15 +113,15 @@ public class NetworkObject : MonoBehaviour {
 		this.isKinematic = false;
 	}
 
-	// Update is called once per frame
-	void Update () {
+	// Update is called once per frame, now change to FixedUpdate()
+	void FixedUpdate () {
 		if ((Vector3.Distance(transform.position, lastPosition) > 0.05) || (Quaternion.Angle(transform.rotation, lastRotation) > 0.3))
 		{
 			//If is a client object not grabbed as isKinematic, the owner object grabbed and isKinematic = false
 			if (!rb.isKinematic) 
 			{	
 				//SerialisePosRot (Vector3.Lerp (transform.position, lastPosition, Time.deltaTime * InterRate), Quaternion.Lerp (transform.rotation, lastRotation, Time.deltaTime * InterRate), ObjectID, isKinematic);
-				NetworkManager.instance.SendMessage (NetworkManager.SendType.SENDTOOTHER, NetworkManager.PacketId.OBJECT_MOVE, this.objectID, String.Empty, this.isKinematic, transform.position, transform.rotation);
+				NetworkManager.instance.SendMessage (NetworkManager.SendType.SENDTOOTHER, NetworkManager.PacketId.OBJECT_MOVE, this.objectID, this.UID, this.isKinematic, transform.position, transform.rotation);
 				//Update stuff
 				lastPosition = transform.position;
 				lastRotation = transform.rotation;
