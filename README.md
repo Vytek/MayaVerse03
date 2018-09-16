@@ -66,12 +66,12 @@ Configuration git:
 
 ## Open source Assets List ##
 
-- https://github.com/thestonefox/VRTK (Commit: d88c9eafc31975bb9566e5747c12e48e5f75fa3d)
-- https://github.com/ValveSoftware/steamvr_unity_plugin
-- https://github.com/KhronosGroup/UnityGLTF
-- https://github.com/atteneder/glTFast
-- https://github.com/AKuellar/LSky-v2
-- https://github.com/BananaHemic/Mumble-Unity
+- https://github.com/thestonefox/VRTK (Commit: d88c9eafc31975bb9566e5747c12e48e5f75fa3d) (MIT)
+- https://github.com/ValveSoftware/steamvr_unity_plugin (BSD 3-Clause)
+- https://github.com/KhronosGroup/UnityGLTF (MIT)
+- https://github.com/atteneder/glTFast (MIT)
+- https://github.com/AKuellar/LSky-v2 (MIT)
+- https://github.com/BananaHemic/Mumble-Unity (MIT)
 
 ### Tools ###
 
@@ -79,16 +79,17 @@ Configuration git:
 - https://github.com/Tayx94/graphy (MIT)
 - https://github.com/sampaiodias/unity-cli (NOT USED BUT INCLUDED) (Creative Commons 4.0)
 - https://github.com/stillwwater/command_terminal (MIT)
+- https://github.com/densylkin/QuickPool (MIT)
 
 ### Networking ###
 
-- https://github.com/DarkRiftNetworking/Hazel-Networking
-- https://github.com/Vytek/HazelTestUDPClientUnity
+- https://github.com/DarkRiftNetworking/Hazel-Networking (MIT)
+- https://github.com/Vytek/HazelTestUDPClientUnity (MIT)
 - https://github.com/Vytek/HazelTest
-- https://google.github.io/flatbuffers/
-- https://github.com/PimDeWitte/UnityMainThreadDispatcher
+- https://google.github.io/flatbuffers/ (APACHE 2.0)
+- https://github.com/PimDeWitte/UnityMainThreadDispatcher (APACHE 2.0)
 - https://github.com/Vytek/MVUpdateDB
-- https://github.com/mbdavid/LiteDB
+- https://github.com/mbdavid/LiteDB (MIT)
 
 ## Free Assets ##
 
