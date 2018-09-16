@@ -532,10 +532,17 @@ public class NetworkManager : MonoBehaviour
     /// <param name="vIPFSHash">VIPFSHash.</param>
     public void RezObject(Vector3 vpos, Quaternion vrot, ushort vID, string vIPFSHash)
     {
-        //Calculate all
+        //Calculate all data
         vID = (ushort)(GameObjectTracker.AllGameObjects.Count + 1);
+        //Pos,Rot
+        Vector3 playerPos = lastPosition;
+        Vector3 playerDirection = transform.forward;
+        Quaternion playerRotation = lastRotation;
+        float spawnDistance = 10;
+        //SpawnPostion
+        Vector3 spawnPos = playerPos + playerDirection * spawnDistance;
         //Call UnityMainThreadDispatcher to spawn
-
+        UnityMainThreadDispatcher.Instance().Enqueue(SpawnObjectInMainThread(spawnPos, Quaternion.identity, vID, vIPFSHash)); 
         //Set correct ID
         //Set GameObject Name = GLTF_<vIPFSHash>
         //SendCommand to other Clients to Rez Object
@@ -551,8 +558,9 @@ public class NetworkManager : MonoBehaviour
     public void UnRezObject(ushort vID, string vIPFSHash)
     {
         //Call UnityMainThreadDispatcher to destroy object
+        UnityMainThreadDispatcher.Instance().Enqueue(UnSpawnObjectInMainThread(vID,vIPFSHash));
         //SendCommand to other Clients to UnRez Object
-        SendMessage(SendType.SENDTOOTHER, PacketId.OBJECT_SPAWN, vID, this.UID + ";" + this.AvatarName, true, lastPosition, lastRotation); //TO MODIFY
+        SendMessage(SendType.SENDTOOTHER, PacketId.OBJECT_UNSPAWN, vID, this.AvatarName+";"+vIPFSHash, true, lastPosition, lastRotation);
         //Send Reliable Message?
     }
 
@@ -642,7 +650,7 @@ public class NetworkManager : MonoBehaviour
     /// <param name="IPFSHash">IPFSH ash.</param>
     public IEnumerator UnSpawnObjectInMainThread(ushort ID, String IPFSHash)
     {
-        //UnSpawn GameObject (How use with Pool for https://github.com/reneabreu/UltimateSpawner?)
+        //UnSpawn GameObject (How use with Pool for https://github.com/reneabreu/UltimateSpawner? For now no!)
 		yield return null;
     }
 

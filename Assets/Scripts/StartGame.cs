@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class StartGame : MonoBehaviour {
@@ -18,6 +19,9 @@ public class StartGame : MonoBehaviour {
 		{
 			Debug.Log ("GameObject Name: " + GO.name);
 		}
-		//Search with IndexOf??
-	}
+        //Search with IndexOf?? Perhaps: https://answers.unity.com/questions/442220/searching-a-list-of-gameobjects-by-name.html
+        //GameObjectTracker.AllGameObjects.
+        GameObject temp = GameObjectTracker.AllGameObjects.Where(obj => obj.GetComponent<NetworkObject>().objectID == 2).SingleOrDefault();
+        Debug.Log(temp.name);
+    }
 }
