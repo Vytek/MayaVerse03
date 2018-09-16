@@ -80,6 +80,7 @@ Configuration git:
 - https://github.com/sampaiodias/unity-cli (NOT USED BUT INCLUDED) (Creative Commons 4.0)
 - https://github.com/stillwwater/command_terminal (MIT)
 - https://github.com/densylkin/QuickPool (MIT)
+- https://github.com/gportelli/UnityScreenLogger (MIT)
 
 ### Networking ###
 
