@@ -208,12 +208,13 @@ public class NetworkManager : MonoBehaviour
         Debug.Log("Network Started.");
         //serverConn.SendBytes(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, SendOption.Reliable); //DEBUG
         SendMessageToServer((sbyte)CommandType.LOGIN);
-        //Add PLAYER_JOIN MESSAGE (SENDTOOTHER) NOT HERE TIMER/THREAD PROBLEM 
+        //Add PLAYER_JOIN MESSAGE (SENDTOOTHER) NOT HERE TIMER/THREAD PROBLEM
         //SendMessage(SendType.SENDTOOTHER, PacketId.PLAYER_JOIN, 0, this.UID, true, PlayerME.transform.position, PlayerME.transform.rotation);
         lastPosition = PlayerME.transform.position;
         lastRotation = PlayerME.transform.rotation;
         Debug.Log("Network Trasmitted.");
         //START POOL MANAGER FOR NETWORKOBJECTS
+        Debug.Log("Pool Manager started.");
         poolObj = PoolsManager.Instance;
     }
 
@@ -542,7 +543,7 @@ public class NetworkManager : MonoBehaviour
         //SpawnPostion
         Vector3 spawnPos = playerPos + playerDirection * spawnDistance;
         //Call UnityMainThreadDispatcher to spawn
-        UnityMainThreadDispatcher.Instance().Enqueue(SpawnObjectInMainThread(spawnPos, Quaternion.identity, vID, vIPFSHash)); 
+        UnityMainThreadDispatcher.Instance().Enqueue(SpawnObjectInMainThread(spawnPos, Quaternion.identity, vID, vIPFSHash));
         //Set correct ID
         //Set GameObject Name = GLTF_<vIPFSHash>
         //SendCommand to other Clients to Rez Object
@@ -634,6 +635,7 @@ public class NetworkManager : MonoBehaviour
         //See: https://ipfs.github.io/public-gateway-checker/
         //Define URL for IPFS GateWays
         //GLTF Uri
+        //Try: https://cloudflare-ipfs.com/ipfs/Qmaisz6NMhDB51cCvNWa1GMS7LU1pAxdF4Ld6Ft9kZEP2a
         gobuffer.GetComponent<GLTFComponent>().GLTFUri = "https://ipfs.io/ipfs/" + IPFSHash;
         gobuffer.GetComponent<NetworkObject>().objectID = ID;
         //Define UID
@@ -651,7 +653,7 @@ public class NetworkManager : MonoBehaviour
     public IEnumerator UnSpawnObjectInMainThread(ushort ID, String IPFSHash)
     {
         //UnSpawn GameObject (How use with Pool for https://github.com/reneabreu/UltimateSpawner? For now no!)
-		yield return null;
+		      yield return null;
     }
 
     #region Utility
