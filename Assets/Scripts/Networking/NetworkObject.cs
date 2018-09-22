@@ -58,7 +58,8 @@ public class NetworkObject : MonoBehaviour {
 		this.isKinematic = isKine;
 		lastPosition = nextPosition;
 		lastRotation = nextRotation;
-		transform.position = nextPosition;
+        //Please see: https://twitter.com/arturonereu/status/1042083997399101441?s=09
+        transform.position = nextPosition;
 		transform.rotation = nextRotation;
 		yield return null;
 	}

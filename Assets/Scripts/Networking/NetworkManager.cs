@@ -653,7 +653,7 @@ public class NetworkManager : MonoBehaviour
     public IEnumerator UnSpawnObjectInMainThread(ushort ID, String IPFSHash)
     {
         //UnSpawn GameObject (How use with Pool for https://github.com/reneabreu/UltimateSpawner? For now no!)
-		      yield return null;
+		yield return null;
     }
 
     #region Utility
