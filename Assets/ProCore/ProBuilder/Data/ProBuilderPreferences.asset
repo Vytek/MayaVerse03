@@ -11,7 +11,9 @@ MonoBehaviour:
   m_Script: {fileID: 146836576, guid: 0472bdc8d6d15384d98f22ee34302f9c, type: 3}
   m_Name: ProBuilderPreferences
   m_EditorClassIdentifier: 
-  m_Bool_keys: []
+  m_Bool_keys:
+  - pbDefaultOpenInDockableWindow
+  - pbIconGUI
   m_Int_keys:
   - pbHandleAlignment
   - pbDefaultEditLevel
@@ -23,7 +25,7 @@ MonoBehaviour:
   m_String_keys: []
   m_Color_keys: []
   m_Material_keys: []
-  m_Bool_values: 
+  m_Bool_values: 0001
   m_Int_values: 00000000000000000000000001000000
   m_Float_values:
   - 0
