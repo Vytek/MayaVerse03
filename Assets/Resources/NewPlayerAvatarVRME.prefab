@@ -686,10 +686,8 @@ GameObject:
   m_Component:
   - component: {fileID: 4261371230777038}
   - component: {fileID: 137896507045475208}
-  - component: {fileID: 95918300696311826}
   - component: {fileID: 114007374065849186}
-  - component: {fileID: 114262564965232220}
-  - component: {fileID: 114042910383724048}
+  - component: {fileID: 114628035532649660}
   m_Layer: 0
   m_Name: ItSeez3D Head
   m_TagString: Untagged
@@ -1055,7 +1053,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1518927088819320}
   m_LocalRotation: {x: -0.30070576, y: 0, z: 0, w: 0.953717}
-  m_LocalPosition: {x: 0, y: 0, z: 1}
+  m_LocalPosition: {x: -1, y: 0, z: 1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 4139727601148020}
@@ -1151,7 +1149,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1642657003413070}
   m_LocalRotation: {x: 0.5564005, y: -0.018750938, z: 0.76965183, w: 0.3125748}
-  m_LocalPosition: {x: 0.345514, y: -0.10252699, z: 1.05123}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 4972624252804574}
@@ -1477,7 +1475,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1175927697003552}
   m_LocalRotation: {x: -0.3125748, y: 0.76965183, z: 0.018750938, w: 0.5564005}
-  m_LocalPosition: {x: -0.34551403, y: -0.10252688, z: 1.0512307}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 4682431187558508}
@@ -1973,23 +1971,6 @@ Animator:
   m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
---- !u!95 &95918300696311826
-Animator:
-  serializedVersion: 3
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1649510328703942}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 2fe826f3805a07946a8ba5297666daeb, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 1
-  m_LinearVelocityBlending: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
 --- !u!95 &95947833005670940
 Animator:
   serializedVersion: 3
@@ -2034,20 +2015,6 @@ MonoBehaviour:
   UID: 
   DEBUG: 0
   LOCAL: 1
---- !u!114 &114042910383724048
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1649510328703942}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0ecfb2ba27b9fb468e7ddb8f66f5ac1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  script: {fileID: 114262564965232220}
-  minTime: 1
-  maxTime: 4
 --- !u!114 &114153353533175282
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -2132,7 +2099,7 @@ MonoBehaviour:
   m_firstVisibleCharacter: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 4.3698487, z: 16.714518, w: 0}
+  m_margin: {x: -2.8939757, y: 4.3698487, z: 16.714518, w: 0}
   m_textInfo:
     textComponent: {fileID: 114153353533175282}
     characterCount: 11
@@ -2161,21 +2128,6 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   m_maskType: 0
---- !u!114 &114262564965232220
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1649510328703942}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f24be46551a73da4d8957cbabeac81cd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  EyesBlink_L_BlendShape: 9
-  EyesBlink_R_BlendShape: 10
-  EyeOpenSpeed: 15
-  EyeCloseSpeed: 10
 --- !u!114 &114409239450649290
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -2201,6 +2153,17 @@ MonoBehaviour:
   AvatarHead: {fileID: 1388121696047054}
   LeftHand: {fileID: 1518927088819320}
   RightHand: {fileID: 1823730376529188}
+--- !u!114 &114628035532649660
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1649510328703942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f72a456ec14444fca84f069106aa8fcf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &114752252124558130
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -2494,6 +2457,6 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 8, y: 4}
+  m_AnchoredPosition: {x: 10, y: 4}
   m_SizeDelta: {x: 20, y: 5}
   m_Pivot: {x: 0.5, y: 0.5}

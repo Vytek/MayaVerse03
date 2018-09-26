@@ -9545,7 +9545,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1668548635}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a70a0fd166b1ca44b24b11ff5f75a46, type: 3}
+  m_Script: {fileID: 11500000, guid: 1b41838f00802402f8420b1d0a7741e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   MaxHeight: 0.7
@@ -9555,12 +9555,12 @@ MonoBehaviour:
   ToggleFullHotkey: '#\'
   BufferSize: 512
   ConsoleFont: {fileID: 12800000, guid: 76ed11d84beb10846a746b4259e26d39, type: 3}
-  InputCaret: MV>
+  InputCaret: '>'
   ShowGUIButtons: 0
   RightAlignButtons: 0
   InputContrast: 0
-  InputAlpha: 0
-  BackgroundColor: {r: 0, g: 0, b: 0, a: 0.691}
+  InputAlpha: 0.5
+  BackgroundColor: {r: 0, g: 0, b: 0, a: 1}
   ForegroundColor: {r: 1, g: 1, b: 1, a: 1}
   ShellColor: {r: 1, g: 1, b: 1, a: 1}
   InputColor: {r: 0, g: 1, b: 1, a: 1}
@@ -11543,58 +11543,12 @@ Prefab:
     - target: {fileID: 114153353533175282, guid: d187b5ea960eebf4894b8a01620dce4c,
         type: 2}
       propertyPath: m_havePropertiesChanged
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 114153353533175282, guid: d187b5ea960eebf4894b8a01620dce4c,
         type: 2}
       propertyPath: m_isInputParsingRequired
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4668586279229488, guid: d187b5ea960eebf4894b8a01620dce4c, type: 2}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4668586279229488, guid: d187b5ea960eebf4894b8a01620dce4c, type: 2}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4668586279229488, guid: d187b5ea960eebf4894b8a01620dce4c, type: 2}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4186801092506306, guid: d187b5ea960eebf4894b8a01620dce4c, type: 2}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4186801092506306, guid: d187b5ea960eebf4894b8a01620dce4c, type: 2}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4186801092506306, guid: d187b5ea960eebf4894b8a01620dce4c, type: 2}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4646137322494180, guid: d187b5ea960eebf4894b8a01620dce4c, type: 2}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4646137322494180, guid: d187b5ea960eebf4894b8a01620dce4c, type: 2}
-      propertyPath: m_LocalPosition.z
       value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4077833024837222, guid: d187b5ea960eebf4894b8a01620dce4c, type: 2}
-      propertyPath: m_LocalPosition.x
-      value: -1
-      objectReference: {fileID: 0}
-    - target: {fileID: 114153353533175282, guid: d187b5ea960eebf4894b8a01620dce4c,
-        type: 2}
-      propertyPath: m_margin.x
-      value: -2.8939757
-      objectReference: {fileID: 0}
-    - target: {fileID: 224994958732263858, guid: d187b5ea960eebf4894b8a01620dce4c,
-        type: 2}
-      propertyPath: m_AnchoredPosition.x
-      value: 10
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: d187b5ea960eebf4894b8a01620dce4c, type: 2}

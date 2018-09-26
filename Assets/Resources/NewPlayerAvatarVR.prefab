@@ -599,10 +599,8 @@ GameObject:
   m_Component:
   - component: {fileID: 4599380182421850}
   - component: {fileID: 137231028153461440}
-  - component: {fileID: 95381405552055850}
   - component: {fileID: 114163948299711132}
-  - component: {fileID: 114169260554125696}
-  - component: {fileID: 114308668970178898}
+  - component: {fileID: 114773091490708960}
   m_Layer: 0
   m_Name: ItSeez3D Head
   m_TagString: Untagged
@@ -1973,23 +1971,6 @@ Animator:
   m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
---- !u!95 &95381405552055850
-Animator:
-  serializedVersion: 3
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1622668783759260}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 2fe826f3805a07946a8ba5297666daeb, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 1
-  m_LinearVelocityBlending: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
 --- !u!95 &95760699959328578
 Animator:
   serializedVersion: 3
@@ -2034,21 +2015,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   audioSource: {fileID: 0}
   mouthBlendShape: 22
---- !u!114 &114169260554125696
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1622668783759260}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f24be46551a73da4d8957cbabeac81cd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  EyesBlink_L_BlendShape: 9
-  EyesBlink_R_BlendShape: 10
-  EyeOpenSpeed: 15
-  EyeCloseSpeed: 10
 --- !u!114 &114211323147863538
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -2060,20 +2026,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bcbb5a4d73a25fb40bf29201409ef397, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &114308668970178898
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1622668783759260}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0ecfb2ba27b9fb468e7ddb8f66f5ac1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  script: {fileID: 114169260554125696}
-  minTime: 1
-  maxTime: 4
 --- !u!114 &114349241067425078
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -2213,6 +2165,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UID: 
   DEBUG: 1
+--- !u!114 &114773091490708960
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1622668783759260}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f72a456ec14444fca84f069106aa8fcf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &114783613274046600
 MonoBehaviour:
   m_ObjectHideFlags: 1
