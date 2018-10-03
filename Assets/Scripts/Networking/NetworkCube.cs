@@ -32,11 +32,12 @@ public class NetworkCube : MonoBehaviour {
         Debug.Log("This is executed from the main thread");
         //transform.position = new Vector3(newMessage.GameObjectPos.x, newMessage.GameObjectPos.y, newMessage.GameObjectPos.z);
         lastPosition = nextPosition;
-        //https://twitter.com/arturonereu/status/1042083997399101441
-        transform.position = nextPosition;
-		//Added rotation
+        //Added rotation
         lastRotation = nextRotation;
-        transform.rotation = nextRotation;
+        //https://twitter.com/arturonereu/status/1042083997399101441
+        //transform.position = nextPosition;
+        //transform.rotation = nextRotation;
+        transform.SetPositionAndRotation(nextPosition, nextRotation);
         yield return null;
     }
 

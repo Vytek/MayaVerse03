@@ -22,6 +22,6 @@ public class StartGame : MonoBehaviour {
         //Search with IndexOf?? Perhaps: https://answers.unity.com/questions/442220/searching-a-list-of-gameobjects-by-name.html
         //GameObjectTracker.AllGameObjects.
         GameObject temp = GameObjectTracker.AllGameObjects.Where(obj => obj.GetComponent<NetworkObject>().objectID == 2).SingleOrDefault();
-        Debug.Log(temp.name);
+        Debug.Log("GameObject Number 2 Name: "+temp.name);
     }
 }

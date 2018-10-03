@@ -59,9 +59,10 @@ public class NetworkPlayer : MonoBehaviour {
 		else
 		{
             //https://twitter.com/arturonereu/status/1042083997399101441?s=09
-            transform.position = nextPosition;
-			transform.rotation = nextRotation;
-		}
+            //transform.position = nextPosition;
+            //transform.rotation = nextRotation;
+            transform.SetPositionAndRotation(nextPosition, nextRotation);
+        }
 		yield return null;
 	}
 

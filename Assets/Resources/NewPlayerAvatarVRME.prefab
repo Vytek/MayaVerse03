@@ -229,15 +229,15 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4379192163683054}
-  - component: {fileID: 114442816358266112}
   - component: {fileID: 114409239450649290}
+  - component: {fileID: 114442816358266112}
   m_Layer: 0
   m_Name: NewPlayerAvatarVRME
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &1309833980466368
 GameObject:
   m_ObjectHideFlags: 1
@@ -2110,11 +2110,11 @@ MonoBehaviour:
     lineCount: 1
     pageCount: 1
     materialCount: 1
-  m_havePropertiesChanged: 0
+  m_havePropertiesChanged: 1
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_spriteAnimator: {fileID: 0}
-  m_isInputParsingRequired: 0
+  m_isInputParsingRequired: 1
   m_inputSource: 0
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 23602318142194454}

@@ -59,9 +59,10 @@ public class NetworkObject : MonoBehaviour {
 		lastPosition = nextPosition;
 		lastRotation = nextRotation;
         //Please see: https://twitter.com/arturonereu/status/1042083997399101441?s=09
-        transform.position = nextPosition;
-		transform.rotation = nextRotation;
-		yield return null;
+        //transform.position = nextPosition;
+        //transform.rotation = nextRotation;
+        transform.SetPositionAndRotation(nextPosition, nextRotation);
+        yield return null;
 	}
 
 	/// <summary>
