@@ -6,5 +6,5 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scripts/QuickPool/Demo/Scenes/DemoScene1.unity
-    guid: 080782ef7936b9740b0cc266e8dcf000
+    path: Assets/Libs/LeanTween/Testing/TestingRotate.unity
+    guid: 88db57df867844767a1535ae3671ae36

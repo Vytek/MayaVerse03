@@ -9,7 +9,7 @@ public static class RezCommand
         float x = args[0].Float;
         float y = args[1].Float;
         float z = args[2].Float;
-        string vIPFSHashFromCommand = args[2].String;
+        string vIPFSHashFromCommand = args[3].String;
 
         if (Terminal.IssuedError) return; // Error will be handled by Terminal
 
