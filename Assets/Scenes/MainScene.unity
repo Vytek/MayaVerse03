@@ -9642,9 +9642,27 @@ MonoBehaviour:
   m_GameObject: {fileID: 1668548635}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a70a0fd166b1ca44b24b11ff5f75a46, type: 3}
+  m_Script: {fileID: 11500000, guid: 1b41838f00802402f8420b1d0a7741e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  MaxHeight: 0.7
+  SmallTerminalRatio: 0.33
+  ToggleSpeed: 360
+  ToggleHotkey: \
+  ToggleFullHotkey: '#\'
+  BufferSize: 512
+  ConsoleFont: {fileID: 0}
+  InputCaret: '>'
+  ShowGUIButtons: 0
+  RightAlignButtons: 0
+  InputContrast: 0
+  InputAlpha: 0.5
+  BackgroundColor: {r: 0, g: 0, b: 0, a: 0.5803922}
+  ForegroundColor: {r: 1, g: 1, b: 1, a: 1}
+  ShellColor: {r: 1, g: 1, b: 1, a: 1}
+  InputColor: {r: 0, g: 1, b: 1, a: 1}
+  WarningColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  ErrorColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1 &1670663692
 GameObject:
   m_ObjectHideFlags: 0
