@@ -72,6 +72,7 @@ Configuration git:
 - https://github.com/atteneder/glTFast (MIT)
 - https://github.com/AKuellar/LSky-v2 (MIT)
 - https://github.com/BananaHemic/Mumble-Unity (MIT)
+- https://github.com/dentedpixel/LeanTween (MIT)
 
 ### Tools ###
 
