@@ -631,15 +631,21 @@ public class NetworkManager : MonoBehaviour
     {
         //Spawn GameObject (Using Pool and https://github.com/reneabreu/UltimateSpawner? NO!)
         GameObject gobuffer = NetworkObjectPrefab.Spawn(pos, rot);
-        gobuffer.name = "GLTF_" + IPFSHash;
-        //See: https://ipfs.github.io/public-gateway-checker/
-        //Define URL for IPFS GateWays
-        //GLTF Uri
-        //Try: https://cloudflare-ipfs.com/ipfs/Qmaisz6NMhDB51cCvNWa1GMS7LU1pAxdF4Ld6Ft9kZEP2a
-        gobuffer.GetComponent<GLTFComponent>().GLTFUri = "https://ipfs.io/ipfs/" + IPFSHash;
-        gobuffer.GetComponent<NetworkObject>().objectID = ID;
-        //Define UID
-        gobuffer.GetComponent<NetworkObject>().UID = this.AvatarName + ";" + IPFSHash;
+        if  (gobuffer != null)
+        {
+            gobuffer.name = "GLTF_" + IPFSHash;
+            //See: https://ipfs.github.io/public-gateway-checker/
+            //Define URL for IPFS GateWays
+            //GLTF Uri
+            //Try: https://cloudflare-ipfs.com/ipfs/Qmaisz6NMhDB51cCvNWa1GMS7LU1pAxdF4Ld6Ft9kZEP2a
+            gobuffer.GetComponent<GLTFComponent>().GLTFUri = "https://ipfs.io/ipfs/" + IPFSHash;
+            gobuffer.GetComponent<NetworkObject>().objectID = ID;
+            //Define UID
+            gobuffer.GetComponent<NetworkObject>().UID = this.AvatarName + ";" + IPFSHash;
+        } else
+        {
+            Debug.Log(gobuffer);
+        }
         //Activate/Deactivate Dissolve Shader (see: https://github.com/kwnetzwelt/unity3d-dissolve-shader and https://github.com/JPBotelho/Dissolve-Shader)
         yield return null;
     }
