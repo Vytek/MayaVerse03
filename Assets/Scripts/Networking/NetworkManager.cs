@@ -475,8 +475,8 @@ public class NetworkManager : MonoBehaviour
             }
             else if ((byte)PacketId.OBJECT_SPAWN == ObjectReceived.Type)
             {
-                //TO DO
-                UnityMainThreadDispatcher.Instance().Enqueue(SpawnObjectInMainThread(new Vector3(ObjectReceived.Pos.X, ObjectReceived.Pos.Y, ObjectReceived.Pos.Z), new Quaternion(ObjectReceived.Rot.X, ObjectReceived.Rot.Y, ObjectReceived.Rot.Z, ObjectReceived.Rot.W), ObjectReceived.ID, ObjectReceived.Owner));
+                //DONE
+				UnityMainThreadDispatcher.Instance().Enqueue(SpawnObjectInMainThreadOwner(new Vector3(ObjectReceived.Pos.X, ObjectReceived.Pos.Y, ObjectReceived.Pos.Z), new Quaternion(ObjectReceived.Rot.X, ObjectReceived.Rot.Y, ObjectReceived.Rot.Z, ObjectReceived.Rot.W), ObjectReceived.ID, ObjectReceived.Owner));
             }
             else if ((byte)PacketId.OBJECT_UNSPAWN == ObjectReceived.Type)
             {
@@ -638,7 +638,8 @@ public class NetworkManager : MonoBehaviour
             //Define URL for IPFS GateWays
             //GLTF Uri
             //Try: https://cloudflare-ipfs.com/ipfs/Qmaisz6NMhDB51cCvNWa1GMS7LU1pAxdF4Ld6Ft9kZEP2a
-            gobuffer.GetComponent<GLTFComponent>().GLTFUri = "https://ipfs.io/ipfs/" + IPFSHash;
+
+			gobuffer.GetComponent<GLTFComponent>().GLTFUri = "https://ipfs.io/ipfs/" + IPFSHash;
             gobuffer.GetComponent<NetworkObject>().objectID = ID;
             //Define UID
             gobuffer.GetComponent<NetworkObject>().UID = this.AvatarName + ";" + IPFSHash;
@@ -649,6 +650,40 @@ public class NetworkManager : MonoBehaviour
         //Activate/Deactivate Dissolve Shader (see: https://github.com/kwnetzwelt/unity3d-dissolve-shader and https://github.com/JPBotelho/Dissolve-Shader)
         yield return null;
     }
+
+	/// <summary>
+	/// Spawns the object in main thread from owner.
+	/// </summary>
+	/// <returns>The object in main thread from owner.</returns>
+	/// <param name="pos">Position.</param>
+	/// <param name="rot">Rot.</param>
+	/// <param name="ID">ID.</param>
+	/// <param name="Owner">Owner.</param>
+	public IEnumerator SpawnObjectInMainThreadOwner(Vector3 pos, Quaternion rot, ushort ID, String Owner)
+	{
+		//Spawn GameObject (Using Pool and https://github.com/reneabreu/UltimateSpawner? NO!)
+		GameObject gobuffer = NetworkObjectPrefab.Spawn(pos, rot);
+		if  (gobuffer != null)
+		{
+			string[] tokensUIDIPFSHash = Owner.Split(';');
+			Debug.Log ("Object Spawned from: " + tokensUIDIPFSHash [0]);
+			gobuffer.name = "GLTF_" + tokensUIDIPFSHash [1].Trim();
+			//See: https://ipfs.github.io/public-gateway-checker/
+			//Define URL for IPFS GateWays
+			//GLTF Uri
+			//Try: https://cloudflare-ipfs.com/ipfs/Qmaisz6NMhDB51cCvNWa1GMS7LU1pAxdF4Ld6Ft9kZEP2a
+
+			gobuffer.GetComponent<GLTFComponent>().GLTFUri = "https://ipfs.io/ipfs/" + tokensUIDIPFSHash [1].Trim();
+			gobuffer.GetComponent<NetworkObject>().objectID = ID;
+			//Define UID
+			gobuffer.GetComponent<NetworkObject>().UID = tokensUIDIPFSHash [0] + ";" + tokensUIDIPFSHash [1].Trim();
+		} else
+		{
+			Debug.Log(gobuffer);
+		}
+		//Activate/Deactivate Dissolve Shader (see: https://github.com/kwnetzwelt/unity3d-dissolve-shader and https://github.com/JPBotelho/Dissolve-Shader)
+		yield return null;
+	}
 
     /// <summary>
     /// Uns the spawn object in main thread.
