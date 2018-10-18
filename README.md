@@ -33,7 +33,7 @@ The current Client system is based on SW:
 3D Graphics Engine Config:
 
 Versions
-  Unity: 2017.4.10f1
+  Unity: 2017.4.13f1
   
   VRTK: 3.3.0 (may not be correct if source is GitHub)
   
