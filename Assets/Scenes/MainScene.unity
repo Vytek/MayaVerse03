@@ -3130,7 +3130,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   objectID: 1
-  UID: 
+  UID: Vytek75;QmerSDvd9PTgcbTAz68rL1ujeCZakhdLeAUpdcfdkyhqyx
   DEBUG: 0
   InterRate: 9
 --- !u!114 &658752385
@@ -3187,7 +3187,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0.05
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
@@ -6737,7 +6737,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   objectID: 3
-  UID: 
+  UID: Vytek75;QmPqQ7RANMBygjFREHhF41LDZ6zypHc4G3y3q4uuAyacmu
   DEBUG: 0
   InterRate: 9
 --- !u!114 &1125156299
@@ -6793,7 +6793,7 @@ Rigidbody:
   m_Mass: 1
   m_Drag: 0
   m_AngularDrag: 0.05
-  m_UseGravity: 0
+  m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
@@ -7764,7 +7764,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   objectID: 4
-  UID: 
+  UID: Vytek75;QmfFJfA3pYDfXJ6ajDLA8abKufjwALWF1r9R2otVyZH72m
   DEBUG: 0
   InterRate: 9
 --- !u!114 &1356295362
@@ -7821,7 +7821,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0.05
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
@@ -9959,7 +9959,7 @@ Mesh:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_Name: pb_Mesh51430
+  m_Name: pb_Mesh20480
   serializedVersion: 8
   m_SubMeshes:
   - serializedVersion: 2
@@ -12005,7 +12005,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   objectID: 2
-  UID: 
+  UID: Vytek75;QmPfMwb2nuibfRRo3NbbWWYrv7m719QXiPkM3m1Yf1XBNy
   DEBUG: 0
   InterRate: 9
 --- !u!114 &2111858110
@@ -12062,7 +12062,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0.05
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
