@@ -82,6 +82,7 @@ Configuration git:
 - https://github.com/stillwwater/command_terminal (MIT)
 - https://github.com/densylkin/QuickPool (MIT)
 - https://github.com/gportelli/UnityScreenLogger (MIT)
+- https://github.com/BayatGames/SaveGameFree (MIT)
 
 ### Networking ###
 
