@@ -20,7 +20,12 @@ public class GameObjectSaveRotation : MonoBehaviour {
             Load();
         }
     }
-	
+
+    void OnApplicationQuit ()
+	{
+		Save ();
+	}
+
     public void Save()
     {
         SaveGame.Save<Vector3Save>(identifier, target.position, SaveGamePath.DataPath);
