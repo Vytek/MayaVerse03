@@ -6,12 +6,11 @@ using BayatGames.SaveGameFree.Types;
 using BayatGames.SaveGameFree.Serializers;
 using BayatGames.SaveGameFree;
 
-public class GameObjectSaveRotation : MonoBehaviour
+public class GameObjectSavePosition : MonoBehaviour
 {
-
     public Transform target;
     public bool loadOnStart = true;
-    public string identifier = "exampleSaveRotation.dat";
+    public string identifier = "exampleSavePosition.dat";
 
     // Use this for initialization
     void Start()
@@ -31,14 +30,14 @@ public class GameObjectSaveRotation : MonoBehaviour
 
     public void Save()
     {
-        SaveGame.Save<QuaternionSave>(identifier, target.rotation, SaveGamePath.DataPath);
+        SaveGame.Save<Vector3Save>(identifier, target.position, SaveGamePath.DataPath);
     }
 
     public void Load()
     {
-        target.rotation = SaveGame.Load<QuaternionSave>(
-                identifier,
-                Quaternion.identity,
-                SaveGamePath.DataPath);
+        target.position = SaveGame.Load<Vector3Save>(
+            identifier,
+            Vector3.zero,
+            SaveGamePath.DataPath);
     }
 }
