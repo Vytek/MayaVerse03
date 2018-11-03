@@ -3218,7 +3218,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 753276993}
   loadOnStart: 1
-  identifier: exampleSaveRotation.dat
+  identifier: GLTF_SaveRotation.dat
 --- !u!54 &658752388
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3247,7 +3247,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 753276993}
   loadOnStart: 1
-  identifier: exampleSavePosition.dat
+  identifier: GLTF_SavePosition.dat
 --- !u!1 &666403960
 GameObject:
   m_ObjectHideFlags: 0
@@ -6840,6 +6840,20 @@ MonoBehaviour:
   objectHighlighter: {fileID: 0}
   touchHighlightColor: {r: 0, g: 0, b: 0, a: 0}
   usingState: 0
+--- !u!114 &1125156301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1125156297}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ca951aff3754eb498ba657c7bb342b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 1144325662}
+  loadOnStart: 1
+  identifier: GLTF_3_SaveRotation.dat
 --- !u!54 &1125156302
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -6855,6 +6869,20 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &1125156303
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1125156297}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34a78b03c32ccaf409910caacbbcfcd4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 0}
+  loadOnStart: 1
+  identifier: GLTF_3_Position.dat
 --- !u!1 &1128493117
 GameObject:
   m_ObjectHideFlags: 0
@@ -7861,12 +7889,26 @@ MonoBehaviour:
   isUsable: 0
   holdButtonToUse: 1
   useOnlyIfGrabbed: 0
-  pointerActivatesUseAction: 0
+  pointerActivatesUseAction: 1
   useOverrideButton: 0
   allowedUseControllers: 0
   objectHighlighter: {fileID: 0}
   touchHighlightColor: {r: 0, g: 0, b: 0, a: 0}
   usingState: 0
+--- !u!114 &1356295364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1356295360}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ca951aff3754eb498ba657c7bb342b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 1231280595}
+  loadOnStart: 1
+  identifier: GLTF_4_SaveRotation.dat
 --- !u!54 &1356295365
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -7882,6 +7924,20 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &1356295366
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1356295360}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34a78b03c32ccaf409910caacbbcfcd4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 1231280595}
+  loadOnStart: 1
+  identifier: GLTF_4_SavePosition.dat
 --- !u!1 &1368834752
 GameObject:
   m_ObjectHideFlags: 0
@@ -13477,6 +13533,20 @@ MonoBehaviour:
   objectHighlighter: {fileID: 0}
   touchHighlightColor: {r: 0, g: 0, b: 0, a: 0}
   usingState: 0
+--- !u!114 &2111858112
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 2111858108}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ca951aff3754eb498ba657c7bb342b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 1803543111}
+  loadOnStart: 1
+  identifier: GLTF_2_SaveRotation.dat
 --- !u!54 &2111858113
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -13492,6 +13562,20 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &2111858114
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 2111858108}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34a78b03c32ccaf409910caacbbcfcd4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 1803543111}
+  loadOnStart: 1
+  identifier: GLTF_2_SavePosition.dat
 --- !u!1 &2112183950
 GameObject:
   m_ObjectHideFlags: 0
