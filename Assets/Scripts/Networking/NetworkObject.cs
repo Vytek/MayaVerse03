@@ -120,7 +120,7 @@ public class NetworkObject : MonoBehaviour {
 		if ((Vector3.Distance(transform.position, lastPosition) > 0.05) || (Quaternion.Angle(transform.rotation, lastRotation) > 0.3))
 		{
 			//If is a client object not grabbed as isKinematic, the owner object grabbed and isKinematic = false
-			if (!rb.isKinematic) 
+			//if (!rb.isKinematic) 
 			{	
 				//SerialisePosRot (Vector3.Lerp (transform.position, lastPosition, Time.deltaTime * InterRate), Quaternion.Lerp (transform.rotation, lastRotation, Time.deltaTime * InterRate), ObjectID, isKinematic);
 				NetworkManager.instance.SendMessage (NetworkManager.SendType.SENDTOOTHER, NetworkManager.PacketId.OBJECT_MOVE, this.objectID, this.UID, this.isKinematic, transform.position, transform.rotation);

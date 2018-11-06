@@ -449,6 +449,7 @@ public class NetworkManager : MonoBehaviour
             }
             else if ((byte)PacketId.OBJECT_MOVE == ObjectReceived.Type)
             {
+                Debug.Log("Receive OBJECT_MOVE Command for GameObjectID: "+ObjectReceived.ID);
                 ReceiveMessageFromGameObjectBuffer.MessageType = ObjectReceived.Type;
                 ReceiveMessageFromGameObjectBuffer.GameObjectID = ObjectReceived.ID;
                 ReceiveMessageFromGameObjectBuffer.GameObjectPos = new Vector3(ObjectReceived.Pos.X, ObjectReceived.Pos.Y, ObjectReceived.Pos.Z);
