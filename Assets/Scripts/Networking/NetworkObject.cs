@@ -19,7 +19,7 @@ public class NetworkObject : MonoBehaviour {
 	Quaternion nextRotation = Quaternion.identity;
 	Vector3 lastScale;
 
-	bool isKinematic = false;
+	bool isKinematic = true;
 	Rigidbody rb;
 	VRTK_InteractableObject io;
 
